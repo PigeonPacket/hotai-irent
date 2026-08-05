@@ -1,6 +1,22 @@
+/**
+ * 全域樣式 = 設計 token + 共用元件 kit。
+ *
+ * ⚠️ Wave 2 規則：**不要改這個檔案。**
+ * 畫面專屬的 CSS 請放在你自己的畫面模組 `export const css`，
+ * router 會用 <style data-screen="..."> 只注入一次。
+ * 這樣四個平行 subagent 不會共寫同一個 CSS 檔（詳見 src/CONTRACT.md）。
+ *
+ * 下面的元件都可以直接用：
+ *   .card .section-title .muted .notice(.ok/.warn/.danger) .badge(.ok/.warn/.danger)
+ *   .btn(.primary/.secondary/.ghost/.danger/.full/.small) .actions
+ *   .progress/.progress-bar/.steps  .thumbs/.thumb  .kv  .row  .stack  .empty
+ */
+
 :root {
   --bg: #0f1419;
   --surface: #1a2332;
+  --surface-2: #223047;
+  --line: #2a3545;
   --text: #f4f7fb;
   --muted: #8b9cb3;
   --accent: #00c2a8;
@@ -29,6 +45,12 @@ body {
   padding: 12px 16px calc(16px + var(--safe-bottom));
 }
 
+body.has-demo-nav .app {
+  padding-bottom: calc(76px + var(--safe-bottom));
+}
+
+/* ---------------------------------------------------------------- header */
+
 .header {
   margin-bottom: 8px;
 }
@@ -54,25 +76,18 @@ h1 {
   line-height: 1.4;
 }
 
-.motivation {
-  background: linear-gradient(135deg, #1e3a4f, #1a2332);
-  border: 1px solid #2a3f55;
-  border-radius: var(--radius);
-  padding: 10px 12px;
-  margin: 12px 0;
+.section-title {
+  font-size: 16px;
+  margin: 0 0 8px;
+}
+
+.muted {
+  color: var(--muted);
   font-size: 13px;
+  line-height: 1.5;
 }
 
-.motivation p {
-  margin: 4px 0;
-  display: flex;
-  align-items: center;
-  gap: 8px;
-}
-
-.motivation strong {
-  color: var(--accent);
-}
+/* ---------------------------------------------------------------- 進度 */
 
 .progress {
   margin-bottom: 10px;
@@ -123,102 +138,7 @@ h1 {
   color: #6dd4c7;
 }
 
-.camera-wrap {
-  position: relative;
-  width: 100%;
-  aspect-ratio: 3 / 4;
-  border-radius: var(--radius);
-  overflow: hidden;
-  background: #000;
-  border: 1px solid #2a3545;
-}
-
-#video {
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
-  display: block;
-}
-
-.overlay {
-  position: absolute;
-  inset: 0;
-  width: 100%;
-  height: 100%;
-  pointer-events: none;
-}
-
-.overlay-dim {
-  fill: rgba(0, 0, 0, 0.35);
-}
-
-.guide-stroke {
-  fill: none;
-  stroke: rgba(255, 255, 255, 0.85);
-  stroke-width: 2.5;
-  stroke-dasharray: 10 8;
-  stroke-linecap: round;
-}
-
-.guide-fill {
-  fill: none;
-  stroke: var(--accent);
-  stroke-width: 2;
-  stroke-dasharray: 6 6;
-  opacity: 0.9;
-}
-
-.guide-label {
-  fill: #fff;
-  font-size: 16px;
-  font-weight: 600;
-  text-shadow: 0 1px 4px rgba(0, 0, 0, 0.8);
-}
-
-.guide-sublabel {
-  fill: rgba(255, 255, 255, 0.75);
-  font-size: 11px;
-}
-
-.quality-hint {
-  position: absolute;
-  left: 8px;
-  right: 8px;
-  bottom: 8px;
-  padding: 8px 10px;
-  border-radius: 8px;
-  font-size: 12px;
-  line-height: 1.35;
-  background: rgba(245, 166, 35, 0.92);
-  color: #1a1200;
-}
-
-.quality-hint.ok {
-  background: rgba(0, 194, 168, 0.9);
-  color: #002820;
-}
-
-.preview {
-  margin-top: 10px;
-  border-radius: var(--radius);
-  overflow: hidden;
-  border: 1px solid #2a3545;
-}
-
-.preview img {
-  width: 100%;
-  display: block;
-  aspect-ratio: 3 / 4;
-  object-fit: cover;
-}
-
-.preview-caption {
-  margin: 0;
-  padding: 8px 10px;
-  font-size: 12px;
-  background: var(--surface);
-  color: var(--muted);
-}
+/* ---------------------------------------------------------------- 按鈕 */
 
 .actions {
   display: flex;
@@ -236,6 +156,12 @@ h1 {
   font-size: 15px;
   font-weight: 600;
   cursor: pointer;
+  font-family: inherit;
+}
+
+.btn:disabled {
+  opacity: 0.55;
+  cursor: default;
 }
 
 .btn.primary {
@@ -256,19 +182,132 @@ h1 {
   padding: 10px;
 }
 
+.btn.ghost {
+  background: var(--surface-2);
+  color: var(--text);
+}
+
+.btn.danger {
+  background: var(--danger);
+  color: #2b0000;
+}
+
 .btn.full {
   flex-basis: 100%;
   margin-top: 8px;
 }
 
-.gallery {
-  margin-top: 16px;
+.btn.small {
+  padding: 8px 10px;
+  font-size: 13px;
+  min-width: auto;
+  flex: 0 0 auto;
 }
 
-.gallery h2 {
-  font-size: 16px;
-  margin: 0 0 8px;
+/* ---------------------------------------------------------------- 卡片 / 提示 */
+
+.card {
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  padding: 12px;
+  margin: 12px 0;
 }
+
+.notice {
+  border-radius: 10px;
+  padding: 10px 12px;
+  font-size: 13px;
+  line-height: 1.45;
+  margin: 10px 0;
+  background: var(--surface-2);
+  border: 1px solid var(--line);
+}
+
+.notice.ok {
+  background: rgba(0, 194, 168, 0.14);
+  border-color: rgba(0, 194, 168, 0.45);
+}
+
+.notice.warn {
+  background: rgba(245, 166, 35, 0.16);
+  border-color: rgba(245, 166, 35, 0.5);
+}
+
+.notice.danger {
+  background: rgba(255, 107, 107, 0.14);
+  border-color: rgba(255, 107, 107, 0.5);
+}
+
+.badge {
+  display: inline-block;
+  padding: 2px 8px;
+  border-radius: 999px;
+  font-size: 11px;
+  font-weight: 600;
+  background: var(--surface-2);
+  color: var(--muted);
+}
+
+.badge.ok {
+  background: rgba(0, 194, 168, 0.2);
+  color: #6dd4c7;
+}
+
+.badge.warn {
+  background: rgba(245, 166, 35, 0.2);
+  color: var(--warn);
+}
+
+.badge.danger {
+  background: rgba(255, 107, 107, 0.18);
+  color: var(--danger);
+}
+
+/* key-value 列表（車輛資訊 / 積分明細 / 事證摘要都可用） */
+.kv {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: 6px 12px;
+  margin: 0;
+  font-size: 13px;
+}
+
+.kv dt {
+  color: var(--muted);
+}
+
+.kv dd {
+  margin: 0;
+  text-align: right;
+}
+
+.row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.row.between {
+  justify-content: space-between;
+}
+
+.stack {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.empty {
+  color: var(--muted);
+  font-size: 13px;
+  text-align: center;
+  padding: 24px 12px;
+  border: 1px dashed var(--line);
+  border-radius: var(--radius);
+}
+
+/* ---------------------------------------------------------------- 縮圖 */
 
 .thumbs {
   display: grid;
@@ -280,7 +319,7 @@ h1 {
   position: relative;
   border-radius: 8px;
   overflow: hidden;
-  border: 1px solid #2a3545;
+  border: 1px solid var(--line);
 }
 
 .thumb img {
@@ -288,6 +327,11 @@ h1 {
   aspect-ratio: 1;
   object-fit: cover;
   display: block;
+}
+
+.thumb-empty {
+  aspect-ratio: 1;
+  background: #222;
 }
 
 .thumb span {
@@ -300,8 +344,14 @@ h1 {
   background: rgba(0, 0, 0, 0.65);
 }
 
-.footnote {
+/* ---------------------------------------------------------------- 其他 */
+
+.app-footer {
   margin-top: 16px;
+}
+
+.footnote {
+  margin: 0;
   font-size: 11px;
   color: var(--muted);
   line-height: 1.45;
@@ -311,8 +361,90 @@ h1 {
   display: none !important;
 }
 
+/* ---------------------------------------------------------------- 簡報跳頁列 */
+
+.demo-nav {
+  position: fixed;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 50;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 10px calc(8px + var(--safe-bottom));
+  background: rgba(12, 17, 23, 0.96);
+  border-top: 1px solid var(--line);
+  backdrop-filter: blur(8px);
+}
+
+.demo-nav[hidden] {
+  display: none;
+}
+
+.demo-nav-label {
+  font-size: 10px;
+  color: var(--muted);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  flex: 0 0 auto;
+}
+
+.demo-nav-items {
+  display: flex;
+  gap: 6px;
+  overflow-x: auto;
+  flex: 1 1 auto;
+  scrollbar-width: none;
+  padding-bottom: 2px;
+}
+
+.demo-nav-items::-webkit-scrollbar {
+  display: none;
+}
+
+.demo-nav-btn {
+  flex: 0 0 auto;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  border: 1px solid #3a4a5f;
+  background: var(--surface);
+  color: var(--muted);
+  border-radius: 999px;
+  padding: 6px 10px;
+  font-size: 11px;
+  font-family: inherit;
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+.demo-nav-btn.active {
+  border-color: var(--accent);
+  color: var(--accent);
+  background: rgba(0, 194, 168, 0.14);
+}
+
+.demo-nav-btn.reset {
+  flex: 0 0 auto;
+  border-color: #5a3a3a;
+  color: #ff9b9b;
+}
+
+.demo-nav-num {
+  font-size: 9px;
+  opacity: 0.7;
+}
+
 @media (min-width: 431px) {
   .app {
     padding-top: 24px;
+  }
+  .demo-nav {
+    max-width: 430px;
+    margin: 0 auto;
+    border-radius: 12px 12px 0 0;
+    border: 1px solid var(--line);
+    border-bottom: none;
   }
 }

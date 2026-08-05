@@ -4,59 +4,34 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
     <meta name="apple-mobile-web-app-capable" content="yes" />
-    <title>iRent 車況拍照引導 · PoC</title>
+    <title>iRent 車況拍照引導 · Demo</title>
     <link rel="stylesheet" href="styles.css" />
   </head>
   <body>
-    <div class="app" id="app">
+    <!--
+      App shell：header / #screen / footer 三段。
+      畫面內容一律由 src/screens/*.js 的 mount(root, ctx) 渲染進 #screen，
+      不要在這裡加畫面專屬的 markup（見 src/CONTRACT.md）。
+    -->
+    <div class="app">
       <header class="header">
-        <p class="eyebrow">PIG-5 PoC · 和泰 iRent 黑客松</p>
-        <h1 id="phase-title">取車 · 車況拍照</h1>
-        <p class="subtitle" id="phase-subtitle">請依引導拍攝車身四角，建立租前存證</p>
+        <p class="eyebrow" id="app-eyebrow">PigeonPacket · 和泰 iRent 黑客松</p>
+        <h1 id="app-title">載入中…</h1>
+        <p class="subtitle" id="app-subtitle"></p>
       </header>
 
-      <div class="motivation" id="motivation">
-        <p><span class="icon">🛡️</span> 認真拍照可保護你免於還車爭議</p>
-        <p><span class="icon">⭐</span> 完整四角拍照 <strong>+20 積分</strong></p>
-      </div>
+      <main id="screen" class="screen"></main>
 
-      <div class="progress">
-        <div class="progress-bar" id="progress-bar"></div>
-        <ol class="steps" id="steps"></ol>
-      </div>
-
-      <div class="camera-wrap">
-        <video id="video" playsinline autoplay muted></video>
-        <canvas id="capture-canvas" hidden></canvas>
-        <svg class="overlay" id="overlay" viewBox="0 0 360 640" preserveAspectRatio="xMidYMid slice">
-          <rect class="overlay-dim" width="360" height="640" />
-          <g id="guide-group" transform="translate(180, 340)"></g>
-          <text class="guide-label" id="guide-label" x="180" y="80" text-anchor="middle"></text>
-        </svg>
-        <div class="quality-hint hidden" id="quality-hint"></div>
-      </div>
-
-      <div class="preview hidden" id="preview">
-        <img id="preview-img" alt="預覽" />
-        <p class="preview-caption" id="preview-caption"></p>
-      </div>
-
-      <div class="actions">
-        <button type="button" class="btn secondary" id="btn-skip">先繼續（積分較少）</button>
-        <button type="button" class="btn primary" id="btn-capture">拍攝</button>
-        <button type="button" class="btn primary hidden" id="btn-retake">重拍這張</button>
-        <button type="button" class="btn primary hidden" id="btn-next">確認，下一角</button>
-      </div>
-
-      <div class="gallery hidden" id="gallery">
-        <h2>已完成照片</h2>
-        <div class="thumbs" id="thumbs"></div>
-        <button type="button" class="btn primary full" id="btn-finish">完成拍照流程</button>
-      </div>
-
-      <p class="footnote">需 HTTPS 或 localhost 才能啟用相機。此為 PIG-5 概念驗證，品質檢查為輕量啟發式。</p>
+      <footer class="app-footer">
+        <p class="footnote" id="app-footnote">
+          此為 PIG-5 可點擊原型：不接後端，全部使用模擬資料。
+        </p>
+      </footer>
     </div>
 
-    <script src="app.js"></script>
+    <!-- 簡報跳頁列（?nav=1 才顯示，由 src/router.js 渲染） -->
+    <nav id="demo-nav" class="demo-nav" hidden></nav>
+
+    <script type="module" src="app.js"></script>
   </body>
 </html>
