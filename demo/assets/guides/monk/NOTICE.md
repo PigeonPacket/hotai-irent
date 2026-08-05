@@ -18,7 +18,9 @@
 
 **完整性驗證**：本目錄的 SVG 已與上游 raw 檔案比對 SHA-256，內容未經修改（抽樣 5 檔全數 MATCH，涵蓋三個車身類別的 overlay 與 wireframe）。目錄結構為本專案重排，**檔案內容一個 byte 都沒動**。
 
-> 註：`demo/assets/car-reference/MANIFEST.md` 是另一批素材（3D 模型與 Commons 照片）的來源清單，**該目錄已 gitignore、不進版控**，與本目錄無關。本 NOTICE 為自足文件，不依賴該 MANIFEST。
+> 註：`demo/assets/car-reference/` 是另一批素材（3D 模型與 Commons 照片）的來源清單，與本目錄無關。
+> 該目錄**已於 2026-08-05 部分進版控**（僅 3DW 模型與 `shape/` 維持排除），其授權標示見
+> `demo/assets/car-reference/ATTRIBUTION.md`。本 NOTICE 為自足文件，不依賴該目錄的任何檔案。
 
 ---
 

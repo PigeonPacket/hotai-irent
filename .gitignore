@@ -1,5 +1,14 @@
 .secrets/*
 
-# 車體輪廓參考素材（第三方版權：3D Warehouse 模型、CC BY-SA 照片）
-# 一律不進版控，避免公開 repo 的再散布風險。授權見 MANIFEST.md
-demo/assets/car-reference/
+# 車體輪廓參考素材：本目錄只排除以下不可再散布者，其餘已進版控。
+#
+# (1) 3D Warehouse 的三顆模型 —— 受 Trimble 3D Warehouse Terms of Use 管轄、
+#     授權欄位為空（非 CC），不可在公開 repo 再散布。見 ATTRIBUTION.md §4.1。
+demo/assets/car-reference/model-corolla-altis-3dw-carsoftaiwan.glb
+demo/assets/car-reference/model-corolla-cross-hybrid-3dw.glb
+demo/assets/car-reference/model-corolla-cross-3dw-ghost.glb
+
+# (2) Toyota／iRent 官方行銷去背圖（360° 環景影格與車款清單圖）——
+#     all rights reserved，無任何再散布授權，來源未記載於 MANIFEST.md。
+#     見 ATTRIBUTION.md §4.2。
+demo/assets/car-reference/shape/

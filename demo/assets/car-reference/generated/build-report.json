@@ -1,0 +1,190 @@
+{
+ "lf": {
+  "meta": {
+   "distance_m": 3.85,
+   "height_m": 1.5,
+   "azimuth_deg": 45.0,
+   "focal_equiv_mm": 26.0,
+   "hfov_deg": 69.39,
+   "vfov_deg": 54.88,
+   "depression_deg": 15.58,
+   "position_xyz": [
+    2.722,
+    1.5,
+    2.722
+   ],
+   "target_xyz": [
+    -0.237,
+    0.436,
+    0.314
+   ],
+   "out_px": [
+    1000,
+    750
+   ],
+   "corner": "lf",
+   "label": "front-left",
+   "fill_w": 0.7989,
+   "fill_h": 0.6053,
+   "viewBox": [
+    500,
+    375
+   ],
+   "vehicle": "toyota-corolla-cross-xg10",
+   "body_class": "cuv",
+   "length_mm": 4460,
+   "width_mm": 1825,
+   "height_mm": 1620,
+   "wheelbase_mm": 2640,
+   "source": "3D Warehouse GLB render (INTERNAL VALIDATION ONLY)"
+  },
+  "outline_paths": 1,
+  "outline_pts": 78,
+  "detail_paths": 130,
+  "detail_pts": 666,
+  "ground_paths": 5,
+  "svg_bytes": 13648,
+  "secs": 10.0
+ },
+ "rf": {
+  "meta": {
+   "distance_m": 3.85,
+   "height_m": 1.5,
+   "azimuth_deg": 315.0,
+   "focal_equiv_mm": 26.0,
+   "hfov_deg": 69.39,
+   "vfov_deg": 54.88,
+   "depression_deg": 15.58,
+   "position_xyz": [
+    -2.722,
+    1.5,
+    2.722
+   ],
+   "target_xyz": [
+    0.237,
+    0.436,
+    0.314
+   ],
+   "out_px": [
+    1000,
+    750
+   ],
+   "corner": "rf",
+   "label": "front-right",
+   "fill_w": 0.7989,
+   "fill_h": 0.6053,
+   "viewBox": [
+    500,
+    375
+   ],
+   "vehicle": "toyota-corolla-cross-xg10",
+   "body_class": "cuv",
+   "length_mm": 4460,
+   "width_mm": 1825,
+   "height_mm": 1620,
+   "wheelbase_mm": 2640,
+   "source": "3D Warehouse GLB render (INTERNAL VALIDATION ONLY)"
+  },
+  "outline_paths": 1,
+  "outline_pts": 78,
+  "detail_paths": 130,
+  "detail_pts": 712,
+  "ground_paths": 5,
+  "svg_bytes": 14346,
+  "secs": 9.9
+ },
+ "lr": {
+  "meta": {
+   "distance_m": 3.85,
+   "height_m": 1.5,
+   "azimuth_deg": 135.0,
+   "focal_equiv_mm": 26.0,
+   "hfov_deg": 69.39,
+   "vfov_deg": 54.88,
+   "depression_deg": 15.56,
+   "position_xyz": [
+    2.722,
+    1.5,
+    -2.722
+   ],
+   "target_xyz": [
+    -0.242,
+    0.438,
+    -0.321
+   ],
+   "out_px": [
+    1000,
+    750
+   ],
+   "corner": "lr",
+   "label": "rear-left",
+   "fill_w": 0.7891,
+   "fill_h": 0.6292,
+   "viewBox": [
+    500,
+    375
+   ],
+   "vehicle": "toyota-corolla-cross-xg10",
+   "body_class": "cuv",
+   "length_mm": 4460,
+   "width_mm": 1825,
+   "height_mm": 1620,
+   "wheelbase_mm": 2640,
+   "source": "3D Warehouse GLB render (INTERNAL VALIDATION ONLY)"
+  },
+  "outline_paths": 1,
+  "outline_pts": 88,
+  "detail_paths": 130,
+  "detail_pts": 685,
+  "ground_paths": 5,
+  "svg_bytes": 14095,
+  "secs": 9.6
+ },
+ "rr": {
+  "meta": {
+   "distance_m": 3.85,
+   "height_m": 1.5,
+   "azimuth_deg": 225.0,
+   "focal_equiv_mm": 26.0,
+   "hfov_deg": 69.39,
+   "vfov_deg": 54.88,
+   "depression_deg": 15.56,
+   "position_xyz": [
+    -2.722,
+    1.5,
+    -2.722
+   ],
+   "target_xyz": [
+    0.242,
+    0.438,
+    -0.321
+   ],
+   "out_px": [
+    1000,
+    750
+   ],
+   "corner": "rr",
+   "label": "rear-right",
+   "fill_w": 0.7891,
+   "fill_h": 0.6292,
+   "viewBox": [
+    500,
+    375
+   ],
+   "vehicle": "toyota-corolla-cross-xg10",
+   "body_class": "cuv",
+   "length_mm": 4460,
+   "width_mm": 1825,
+   "height_mm": 1620,
+   "wheelbase_mm": 2640,
+   "source": "3D Warehouse GLB render (INTERNAL VALIDATION ONLY)"
+  },
+  "outline_paths": 1,
+  "outline_pts": 87,
+  "detail_paths": 130,
+  "detail_pts": 680,
+  "ground_paths": 5,
+  "svg_bytes": 14019,
+  "secs": 10.9
+ }
+}
