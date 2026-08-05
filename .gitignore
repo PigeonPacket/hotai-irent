@@ -1,1 +1,5 @@
 .secrets/*
+
+# 車體輪廓參考素材（第三方版權：3D Warehouse 模型、CC BY-SA 照片）
+# 一律不進版控，避免公開 repo 的再散布風險。授權見 MANIFEST.md
+demo/assets/car-reference/
