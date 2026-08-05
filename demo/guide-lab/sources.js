@@ -39,16 +39,28 @@ export const FALLBACK_META = {
 export const BASE_PARAMS = { distance: 3.85, height: 1.5, yaw: 45, focal: 26 };
 
 /* ── Monk BSD 基準版 ────────────────────────────────────────────────
- * ⚠ 這四張 overlay 不是四個角。對應關係查自 monk/NOTICE.md §4：
+ * ✅ 更正（2026-08-05）：**這四張其實就是四個角，沒有缺口。**
  *      fesc20-0mJeXBDf = front-lateral-full-right  右前 45°
  *      fesc20-EJ0tXYBW = rear-lateral-full-right   右後 45°
  *      fesc20-T4dIGLgy = rear-lateral-full-left    左後 45°
- *      fesc20-bD8CBhYZ = beauty-shot-left          左側全景（非 45° 角）
- *   缺 front-lateral-full-left（左前 45°）。車體左右對稱 → 鏡射右前即可補上，
- *   但畫面上必須標明是鏡射來的。
+ *      fesc20-bD8CBhYZ = beauty-shot-left       ← **就是左前 45°**
+ *
+ *   上游 fesc20 共 38 個 sight，逐一查過**確實沒有**叫 front-lateral-full-left 的。
+ *   但 beauty-shot-left 的相機是 front-lateral-full-right 的**精確鏡像**
+ *   （location [+1.85,-2.7,1.5] vs [-1.85,-2.7,1.5]、rotation [69,0,+45] vs [69,0,-45]），
+ *   而且兩個 SVG 的幾何**逐點完全相同**：把 0mJeXBDf 對 x=250 鏡射後與 bD8CBhYZ 相比，
+ *   9,556 個取樣點的最大偏差 0.0000 viewBox 單位。rear 那一對同樣是精確鏡像（10,748 點，0.0000）。
+ *   → 四張 overlay 實際上只是 **2 組獨立渲圖 + 各自鏡射**，四角齊全，
+ *     lf 不需要我方自行鏡射，直接用原生 sight 即可。
  *
  * 左右手性已驗證：iRent rf / rr / lr 的「近端」落在畫面 右 / 左 / 右，
  * Monk 對應三張完全一致 → 兩邊命名慣例相同，不需要整體翻面。
+ *
+ * ⚠ 幾何適用性：Monk 的相機站位與本專案的目標站位差很多
+ *   （Monk：離車 3.27 m、方位角 34.4°、鏡頭朝 45°、hFOV 66.7°；
+ *     本專案：3.85 m、方位角 45°、對準車體中心、hFOV 69.4°）。
+ *   實測把 Monk overlay 錨在輪平面疊到 Corolla Cross 上，誤差 9.1–16.1% 車寬，
+ *   其中僅約 3% 來自「車款不同」，其餘來自機位差。詳見 assets/guides/monk/NOTICE.md §6。
  */
 const MONK_DIR = "assets/guides/monk";
 export const MONK = {
@@ -65,10 +77,19 @@ export const MONK = {
     rr: [{ id: "fesc20-EJ0tXYBW", sight: "rear-lateral-full-right", label: "右後 45°（原生 sight）", origin: "native" }],
     lr: [{ id: "fesc20-T4dIGLgy", sight: "rear-lateral-full-left", label: "左後 45°（原生 sight）", origin: "native" }],
     lf: [
-      { id: "fesc20-0mJeXBDf", sight: "front-lateral-full-right", label: "鏡射自右前（幾何等價）", origin: "mirrored", mirror: true },
-      { id: null, label: "不補 —— 顯示缺口", origin: "gap" },
-      { id: "fesc20-bD8CBhYZ", sight: "beauty-shot-left", label: "⚠ beauty-shot-left（左側全景，非 45°）", origin: "not-a-corner" },
+      { id: "fesc20-bD8CBhYZ", sight: "beauty-shot-left", label: "左前 45°（原生 sight · 相機為右前的精確鏡像）", origin: "native" },
+      { id: "fesc20-0mJeXBDf", sight: "front-lateral-full-right", label: "鏡射自右前（與上者逐點相同，0.0000 偏差）", origin: "mirrored", mirror: true },
     ],
+  },
+  /** 上游 fesc20.json 的 camera 欄位 + 本專案回推的有效 FOV（見 NOTICE.md §6） */
+  cameras: {
+    lf: { id: "fesc20-bD8CBhYZ", location_xyz: [1.85, -2.7, 1.5], rotation_xyz_deg: [69, 0, 45] },
+    rf: { id: "fesc20-0mJeXBDf", location_xyz: [-1.85, -2.7, 1.5], rotation_xyz_deg: [69, 0, -45] },
+    lr: { id: "fesc20-T4dIGLgy", location_xyz: [1.85, 2.65, 1.5], rotation_xyz_deg: [70, 0, 135] },
+    rr: { id: "fesc20-EJ0tXYBW", location_xyz: [-1.85, 2.65, 1.5], rotation_xyz_deg: [70, 0, -135] },
+    _focal_length_declared: 26,
+    _hfov_effective_deg: 66.7,
+    _note: "上游宣告 focal_length 26 mm（=hFOV 69.4°），但實測 500×375 overlay 的有效 hFOV 是 66.7°（≒27.4 mm）。",
   },
   svg: (id) => `${MONK_DIR}/cuv/overlays/${id}.svg`,
 };
@@ -84,14 +105,17 @@ export const MONK = {
 export const PHOTOS = {
   lf: [
     { src: `${REF}/render-lf-glb-ccby.png`, label: "3D 渲圖（CC BY 模型 · 相機與輪廓同參數）", kind: "render" },
-    { src: `${REF}/phone-lf-commons-graphite-A.jpg`, label: "實車 A 石墨灰 · 25mm/4:3 · 3.2–3.6m · 偏擺 33°", kind: "photo", note: "四角素材中最接近目標站位", by: "Celica21gtfour" },
+    { src: `${REF}/phone-lf-commons-graphite-A.jpg`, label: "實車 A 石墨灰 · 25mm/4:3 · 偏擺 ~43°（錨定重估）", kind: "photo", note: "四角素材中最接近目標站位；距離／機高無法定出，見 MANIFEST §3.2", by: "Celica21gtfour" },
+    // ⚠ 檔名寫 rf，但幾何上是 lf：車頭在畫面左、車身往右延伸，與 render-lf 基準同布局
+    //   （render-rf 基準是車頭在右）。判定過程見 MANIFEST.md §3.1。檔名保留不動。
+    { src: `${REF}/phone-rf-commons-grey-D.jpg`, label: "實車 D 灰 · 27mm/4:3 · ~3.5m（檔名誤標 rf，實為 lf）", kind: "photo", note: "原本被歸在 rf，2026-08-05 更正為 lf", by: "Captainmorlypogi1959" },
     { src: `${REF}/phone-lf-commons-white-C.jpg`, label: "實車 C 白 · 27mm/16:9 · 3.8–4.2m · 偏擺 40°", kind: "photo", note: "畫面比例是 16:9，非 4:3", by: "Areaseven" },
     { src: `${REF}/phone-lf-commons-black-G.jpg`, label: "實車 G 黑 · 估距 6–8m", kind: "photo", note: "站太遠，僅供視覺參考", by: "Ethan Llamas" },
   ],
   rf: [
     { src: `${REF}/render-rf-glb-ccby.png`, label: "3D 渲圖（CC BY 模型 · 相機與輪廓同參數）", kind: "render" },
-    { src: `${REF}/phone-rf-commons-grey-D.jpg`, label: "實車 D 灰 · 27mm/4:3 · ~3.5m · 偏擺 30°", kind: "photo", note: "rf 的最佳選擇", by: "Captainmorlypogi1959" },
-    { src: `${REF}/phone-rf-commons-red-B.jpg`, label: "實車 B 紅 · 26mm/4:3 · 2.5–3m", kind: "photo", note: "全車未入鏡，只能看車頭細節", by: "オーバードライブ83" },
+    // grey-D 已移到 lf（原誤標）→ rf 沒有任何全車入鏡的實車素材。
+    { src: `${REF}/phone-rf-commons-red-B.jpg`, label: "實車 B 紅 · 26mm/4:3 · 2.5–3m", kind: "photo", note: "全車未入鏡，只能看車頭細節；rf 目前唯一的實車素材", by: "オーバードライブ83" },
   ],
   lr: [
     { src: `${REF}/render-lr-glb-ccby.png`, label: "3D 渲圖（CC BY 模型 · 相機與輪廓同參數）", kind: "render" },

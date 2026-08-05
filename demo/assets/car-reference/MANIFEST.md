@@ -95,7 +95,7 @@
 | `phone-lf-commons-white-C.jpg` | lf | 透視校正 | [Commons](https://commons.wikimedia.org/wiki/File:2020_Toyota_Corolla_Cross_-_Front.jpg) | CC BY-SA 4.0 (Areaseven) | 室內經銷商展場、綠色地坪 | OnePlus HD1903，**27 mm 等效**，1920×1080 **16:9（非 4:3）**；估距 3.8–4.2 m、機高 ~1.6 m、偏擺約 40° | ✅ 車 C（與 lr／side 同車、相隔 2 分鐘） | ✅ 清楚，地坪標線可當地面參考 | 🟡 距離／機高／焦距接近，但**畫面比例是 16:9 不是 4:3** |
 | `phone-lr-commons-white-C.jpg` | lr | 透視校正 | [Commons](https://commons.wikimedia.org/wiki/File:2020_Toyota_Corolla_Cross_-_Rear.jpg) | CC BY-SA 4.0 (Areaseven) | 同上 | 同上；偏擺約 40° | ✅ 車 C | ✅ 清楚 | 🟡 同上（16:9） |
 | `phone-side-commons-white-C.jpg` | 正側（非四角） | 比例／軸距參考 | [Commons](https://commons.wikimedia.org/wiki/File:2020_Toyota_Corolla_Cross_-_Side.jpg) | CC BY-SA 4.0 (Areaseven) | 同上 | OnePlus，**13 mm 等效超廣角** → 桶形變形明顯 | ✅ 車 C | ✅ 清楚 | ❌ 超廣角，不可用於透視校正；僅供量軸距／比例 |
-| `phone-rf-commons-grey-D.jpg` | rf | 透視校正 | [Commons](https://commons.wikimedia.org/wiki/File:Toyota_Corolla_Cross_1.8_G_2020.jpg) | CC BY-SA 4.0 (Captainmorlypogi1959) | 室外碎石地、民宅牆 | Galaxy J4+ (SM-J415GN)，**27 mm 等效，4:3 橫向**；估距 ~3.5 m、機高 ~1.5 m、偏擺約 30° | ❌ 車 D（單張） | ✅ 清楚 | ✅ **rf 的最佳選擇**（距離／機高／4:3／焦距皆合，偏擺淺） |
+| `phone-rf-commons-grey-D.jpg` | **lf**（檔名的 `rf` 是錯的，見下方 §3.1） | 透視校正 | [Commons](https://commons.wikimedia.org/wiki/File:Toyota_Corolla_Cross_1.8_G_2020.jpg) | CC BY-SA 4.0 (Captainmorlypogi1959) | 室外碎石地、民宅牆 | Galaxy J4+ (SM-J415GN)，**27 mm 等效，4:3 橫向**；估距 ~3.5 m、機高 ~1.5 m、偏擺約 30° | ❌ 車 D（單張） | ✅ 清楚 | 🟡 可用，但**是 lf 不是 rf** |
 | `phone-rr-commons-silver-E.jpg` | rr | 透視校正 | [Commons](https://commons.wikimedia.org/wiki/File:Toyota_Corolla_Cross_1.8_G_2023_(13).jpg) | CC BY-SA 4.0 (Captainmorlypogi1959) | 室內展場、反光磁磚地 | 無 EXIF（已被移除）；估距 3–4 m、機高 ~1.6 m、偏擺約 40°、1920×1437 ≈4:3 橫向 | ❌ 車 E（單張） | ✅ 清楚，反光地板同時給出鏡射線 | 🟡 條件接近但**焦距未知**（EXIF 被剝除） |
 | `phone-rr-commons-silver-F.jpg` | rr | 透視校正 | [Commons](https://commons.wikimedia.org/wiki/File:Toyota_Corolla_Cross_1.8_G_2023_(12).jpg) | CC BY-SA 4.0 (Captainmorlypogi1959) | 同上（另一台） | 無 EXIF；估距 ~3.5 m、機高偏高 ~1.7 m、偏擺約 50°、≈4:3 橫向 | ❌ 車 F（單張） | ✅ 清楚 | 🟡 偏擺最接近 45°，但機高偏高、焦距未知 |
 | `phone-rf-commons-red-B.jpg` | rf | 透視校正（僅車頭細節） | [Commons](https://commons.wikimedia.org/wiki/File:2020_Toyota_Corolla_Cross_1.8_ZSG10R_(20201113)_01.jpg) | CC BY-SA 4.0 (オーバードライブ83) | 室內展間 | SONY DSC-W810 隨身機，**26 mm 等效**，4:3 橫向；估距 2.5–3 m、機高 ~1.5 m、偏擺約 25° | ✅ 車 B（與 rr 同車、相隔 22 秒） | 🟡 前輪拱清楚，**後輪被裁掉** | ❌ **全車未入鏡**（左右都被裁切）→ 不能做整體輪廓，只能取車頭細節 |
@@ -103,17 +103,68 @@
 | `phone-side-commons-silver-H.jpg` | 正側偏後（非四角） | 比例參考 | [Commons](https://commons.wikimedia.org/wiki/File:Toyota_Corolla_Cross_1.8_G_2023_(14).jpg) | CC BY-SA 4.0 (Captainmorlypogi1959) | 室內展場 | 無 EXIF；近正側、估距 ~4 m | ❌ 車 H | ✅ 清楚 | ❌ 非 45°，僅供比例 |
 | `phone-lf-commons-black-G.jpg` | lf | 視覺參考 | [Commons](https://commons.wikimedia.org/wiki/File:Toyota_Corolla_Cross_ZSG10_1.8_G_Attitude_Black_Mica.jpg) | CC BY-SA 4.0 (Ethan Llamas) | 室外街道 | 無 EXIF；1920×1234（16:9 裁切）；車在畫面中偏小 → 估距 6–8 m | ❌ 車 G | 🟡 尚可但車體小 | ❌ 站太遠、黑色車輪拱陰影重 → 僅作視覺參考 |
 
-### 角度覆蓋
+### 3.1 ⚠️ 修正：`phone-rf-commons-grey-D.jpg` 其實是 lf（2026-08-05）
+
+**這張的角度歸類原本是錯的**，`sources.js` 也跟著錯（已一併修正）。在 guide-lab 裡這會讓 rf 分頁拿到一張左右鏡射錯誤的參考底圖。
+
+判定依據（三項，全部只用本 repo 內既有素材，不依賴車款知識）：
+
+| 檔案 | 車頭（水箱罩／車牌）在畫面 | 車身往哪延伸 |
+|---|---|---|
+| `render-lf-glb-ccby.png`（本專案自渲的 lf 基準，方位角 45°） | **左** | 右 |
+| `render-rf-glb-ccby.png`（同上，rf 基準，方位角 315°） | **右** | 左 |
+| `phone-lf-commons-graphite-A.jpg`（已驗證的 lf） | **左** | 右 |
+| `phone-rf-commons-grey-D.jpg` | **左** ← 與 lf 基準同布局 | 右 |
+
+即：本專案的 lf ⇒ 車頭在畫面左、rf ⇒ 車頭在畫面右（此規則由 `geom.js` 的 `azimuthFor()` 與相機基底推導可得，並與兩張自渲基準圖一致）。grey-D 的車頭在畫面左，**故為 lf**。
+
+**檔名保持不動**（改名會打斷 git 歷史與既有引用）；角度歸類以本表與 `sources.js` 為準。
+
+### 角度覆蓋（依上述修正後）
 
 | 角度 | 可用素材 | 同一台車 |
 |---|---|---|
-| lf 左前 45° | ✅ graphite-A（最佳）、white-C | ✅ 車 A（lf+lr）、車 C（lf+lr） |
+| lf 左前 45° | ✅ graphite-A（最佳）、white-C、**grey-D**（原誤標 rf） | ✅ 車 A（lf+lr）、車 C（lf+lr） |
 | lr 左後 45° | ✅ graphite-A（最佳）、white-C | ✅ 同上 |
-| rf 右前 45° | ✅ grey-D（最佳）、red-B（裁切） | ✅ 車 B（rf+rr，但兩張都裁切） |
+| rf 右前 45° | ❌ **沒有全車入鏡的素材**（原本唯一的 grey-D 實為 lf；red-B 左右被裁切） | — |
 | rr 右後 45° | ✅ silver-E / silver-F、red-B（裁切） | ✅ 車 B |
 
-- **同一台車、全車入鏡、四角齊全的組合並不存在。** 目前最好的是「車 A 的 lf+lr」+「車 D 的 rf」+「車 E/F 的 rr」，屬**非同一台車的拼湊**（車身同款同代，僅顏色與配備等級不同）。
-- 由於車體左右對稱，**車 A 的 lf/lr 水平鏡射即可得到品質相同的 rf/rr**，實務上四角都可由車 A 一台車推得。
+- **同一台車、全車入鏡、四角齊全的組合並不存在。** 修正後 **rf 完全沒有可用素材**。
+- 由於車體左右對稱，**車 A 的 lf/lr 水平鏡射即可得到品質相同的 rf/rr**，實務上四角都可由車 A 一台車推得；rf 的缺口就用 lf 鏡射補。
+
+### 3.2 相機參數重估（錨定法，2026-08-05）
+
+上表「推估拍攝條件」欄的距離／偏擺是目視估的，偏粗。這裡改用**錨定法**重估：在照片上讀出近側四個地標
+（前後輪的**輪轂中心**＋前後輪的**胎地接觸點**，四點共平面於近側輪平面），以 EXIF 焦距為已知，
+解 5 自由度相機（距離、方位角、機高、平移、俯仰）。
+
+| 檔案 | MANIFEST 原估 | 錨定法重估 | 錨點重投影殘差 |
+|---|---|---|---|
+| `phone-lf-commons-graphite-A.jpg` | 3.2–3.6 m / 偏擺 33° / 機高 1.5–1.6 m | **距離 3.8 m / 偏擺 42.6° / 機高 1.02 m / 俯角 3.2°**（25 mm 等效、hFOV 71.5°） | rms **8.1 px**（逐點 2.8 / 10.8 / 2.9 / 11.3） |
+
+> ⚠️ **這組重估數字不可信，僅記錄不採信。** 偏擺確實明顯大於原記錄的 33°（重估 42.6°，與前一輪獨立估的 44° 同向），
+> 但**距離與機高無法定出**，理由是 graphite-A 的輪部幾何**本身就不自洽**，無法用單一無畸變針孔相機解釋：
+>
+> | 觀測量 | 推得的前輪距離 |
+> |---|---|
+> | 前輪亮鋁圈橢圓的垂直半徑（115 px，18 吋圈） | ≈ 2.2 m |
+> | 前後輪轂在畫面上的張角（602 px / f=1111 px）＋ 實際軸距 2.640 m | ≈ 4.4 m |
+> | 前後輪表觀大小比（1.05–1.28） | 2.9–5.5 m（比值本身很不穩） |
+>
+> 三者相差近 2 倍。可能原因：EXIF 焦距對應的鏡頭與實際使用的鏡頭不同（Galaxy A35 主鏡 26 mm／超廣角 ~13 mm）、
+> 未校正的桶形變形（前輪在畫面中央、後輪靠右緣）、或近側輪拱陰影讓接觸點讀數偏移。
+> **原記錄的 3.2–3.6 m 與前一輪的 5.9 m 都沒有被證實，也都沒有被否證。**
+>
+> 其餘照片（white-C / grey-D / silver-E / silver-F）未逐張重估：本次的量測結論不依賴它們（見下），
+> 且 silver-E/F 的 EXIF 已被剝除、焦距未知，錨定法在焦距未知時距離與焦距耦合、無解。
+
+**方法學結論（重要）：這批 Commons 照片不足以當「輪廓準不準」的裁判。**
+四點錨定疊圖在 graphite-A 上做了控制組檢定：**best-fit 橢圓（15.5% 車寬）比兩條真實輪廓
+（Monk 37.3%、專屬版 31.5%）都好**。控制組贏了 ⇒ **該指標在這批照片上無鑑別力，數字全部作廢。**
+原因不是指標設計，而是**沒有一張照片站在目標機位**（本文件 §5 早已列為缺口）：
+四點共平面單應性只能對齊近側輪平面，無法修正機位差造成的 3D 視差。
+可用的替代裁判見 [`../guides/monk/NOTICE.md`](../guides/monk/NOTICE.md) §6
+（改用 `render-*-glb-ccby.png` 當基準真值，錨點兩側皆為解析值、零人工標註）。
 
 ### 解析度標註
 
