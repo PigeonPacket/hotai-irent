@@ -185,17 +185,24 @@ GLB 的 `asset.copyright` 欄位是空的，因此以 Sketchfab **公開 API**
 
 `shape/` 下 24 個 PNG 為**車廠與租賃業者的官方行銷影像**，屬 all-rights-reserved：
 
-| 群組 | 內容 | 版權人 |
-|---|---|---|
-| `altis-360-*.png`、`cc-360-*.png`（16 張） | Toyota 官網 360° 環景檢視器的去背棚拍影格 | Toyota／和泰汽車 |
-| `irent-*.png`（6 張） | iRent 車款清單的官方去背圖（車牌位置印有 iRent 標誌） | 和泰／iRent |
-| `priusc-still-lf.png`、`yaris-still-lf.png` | 同類官方去背棚拍圖 | Toyota／和泰汽車 |
+| 群組 | 內容 | 取得來源 | 版權人 |
+|---|---|---|---|
+| `altis-360-*.png`、`cc-360-*.png`（16 張） | Toyota 台灣官網 360° 環景檢視器的去背影格（1180×400 RGBA，alpha 去背） | `https://hotaicdn.azureedge.net/toyotaweb/360EXT…_{frame}.png` | Toyota／和泰汽車 |
+| `irent-*.png`（6 張） | iRent 全車系棚拍去背圖（741×457，車牌位置印有 iRent 標誌） | `https://www.irentcar.com.tw/marketing/irent/2512/images/{a,b,c}-car-NN.png` | 和泰／iRent |
+| `priusc-still-lf.png`、`yaris-still-lf.png` | 同一 CDN 的官方去背棚拍圖 | `https://hotaicdn.azureedge.net/toyotaweb/COLOR_*.png` | Toyota／和泰汽車 |
 
-這批影像**沒有任何授權允許再散布**，且 `MANIFEST.md` 未記載其取得來源與條件。
+三組全部直接取自**車廠與租賃業者的官方 CDN／行銷網站**，
+**沒有任何授權允許再散布**，也沒有任何取得授權的紀錄。
+
+> **取得當下的原始指示即已載明不可再散布：**
+> 「版權注意：`hotai-irent` 是 public repo。**這些原廠圖不可再散布。**」
+> 此立場與 commit `2c84c2e`（`chore: exclude car reference research assets from version control`）一致。
+
 它們是本專案的客戶（和泰／iRent）與車廠的自有資產，把它們推上公開 GitHub repo
 是明確的著作權風險，因此**維持 gitignore、不進版控**。
 
 > 需要這批圖時請從內部管道取得，或由和泰正式授權後再納入。
+> 上表的 URL 僅為**出處紀錄**（說明這批檔案從何而來、為何不散布），不構成再散布授權。
 
 ---
 
