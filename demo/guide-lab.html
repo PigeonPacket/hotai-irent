@@ -1,0 +1,35 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, maximum-scale=1">
+<meta name="color-scheme" content="dark">
+<title>車體輪廓驗證頁 · guide-lab</title>
+<!--
+  車體輪廓驗證頁（Toyota Corolla Cross XG10）
+
+  用途：拿手機站在真的 Corolla Cross 前面，現場判斷
+    1. 我們產出的車體輪廓對不對得上實車，以及對得上的相機參數是哪一組
+    2. 內部細節線要哪一級密度
+    3. 交付要用 iRent 專屬版還是 Monk BSD 版
+  沒有自動測試可以驗這件事，只能人眼看 —— 所以每個設計決定都服務「站在車前那三分鐘」。
+
+  怎麼開
+    cd demo && python3 -m http.server 8091
+    手機連同一個 Wi-Fi → http://<電腦IP>:8091/guide-lab.html
+    ⚠ 即時相機需要 HTTPS 或 localhost。用 http://<IP>:8091 開會拿不到相機，
+      本頁會自動降級成模擬畫面（不會卡死）。要真的用相機請加 ?mock=0 並用
+      HTTPS 通道（例如 `npx localtunnel --port 8091` 或 ngrok）。
+    ?mock=1  強制模擬相機
+    ?corner=lf|rf|lr|rr  指定起始角度
+
+  獨立頁面，不走 demo/index.html 那套 router。vanilla JS、零依賴、零 build step。
+-->
+<link rel="stylesheet" href="guide-lab/lab.css">
+</head>
+<body>
+<div id="app"></div>
+<noscript style="display:block;padding:24px;color:#e8edf3">這頁需要 JavaScript。</noscript>
+<script type="module" src="guide-lab/main.js"></script>
+</body>
+</html>
