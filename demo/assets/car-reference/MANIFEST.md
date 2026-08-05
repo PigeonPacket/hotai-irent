@@ -59,17 +59,28 @@
 
 | 檔名 | 角度 | 參數 |
 |---|---|---|
-| `render-lf-glb-3dw.png` | lf 左前 45° | yaw 45° |
-| `render-rf-glb-3dw.png` | rf 右前 45° | yaw 315° |
-| `render-lr-glb-3dw.png` | lr 左後 45° | yaw 135° |
-| `render-rr-glb-3dw.png` | rr 右後 45° | yaw 225° |
+| ~~`render-lf-glb-3dw.png`~~ | lf 左前 45° | yaw 45° |
+| ~~`render-rf-glb-3dw.png`~~ | rf 右前 45° | yaw 315° |
+| ~~`render-lr-glb-3dw.png`~~ | lr 左後 45° | yaw 135° |
+| ~~`render-rr-glb-3dw.png`~~ | rr 右後 45° | yaw 225° |
+
+> **2026-08-05（第二次更新）：這四張已從版控移除。** 全部渲圖與輪廓已改用
+> `model-corolla-cross-sketchfab-ccby.glb`（CC BY 4.0）重新生成，檔名為
+> `render-{lf,rf,lr,rr}-glb-ccby.png`。經逐項比對，CC BY 模型與本節這顆 3DW 模型
+> **是同一份網格**（外接框、逐材質三角形數、輪心座標完全相同，四角剪影 IoU ≥0.9996），
+> 所以下方的尺寸驗證數字對新模型同樣成立。詳見 [`ATTRIBUTION.md`](./ATTRIBUTION.md) §3。
 
 共用相機：**距離 3.85 m、相機高 1.5 m、hFOV 69.4°（≒26 mm 等效、4:3）、俯角 17.3°、輸出 1600×1200 橫向**。
 幾何自我檢查：車頂最高點（1.631 m）投影落在地平線之上、輪胎接地點落在地平線之下 → 相機確實位於車頂線以下，符合 1.5 m 設定。
 
 > 授權（`render-*.png`）：本專案自行渲染，但屬 3D Warehouse 模型的衍生物 → 沿用來源模型的限制。
-> **2026-08-05 更新**：這 4 張最終仍進了版控（來源模型本身未散布），但授權鏈不乾淨，
-> 已在 [`ATTRIBUTION.md`](./ATTRIBUTION.md) §3 誠實標註，並列出改用 CC BY 模型重新生成的補救計畫。
+> **2026-08-05 更新**：這 4 張曾短暫進入版控（來源模型本身未散布）但授權鏈不乾淨；
+> **同日已用 `git rm` 移除**，並改用 CC BY 模型重新生成（git 歷史仍保有舊檔）。
+> 完整經過見 [`ATTRIBUTION.md`](./ATTRIBUTION.md) §3.3。
+
+> ⚠️ 本節記載的相機參數「俯角 17.3°、輸出 1600×1200」與 `generated/build-report.json`
+> 的 15.58° 不一致 —— 實測舊渲圖的取景與 SVG 相機差約 3% 畫面，兩批並非同一組相機。
+> 新的 `render-*-glb-ccby.png` 已改為與 SVG 逐項同參數（填充率誤差 ≤0.3%）。
 
 ---
 
@@ -116,7 +127,8 @@
 |---|---|---|
 | 12 張 Commons 照片 | 全部 **CC BY-SA 4.0** | 🟡 技術上可以，但須逐張標示作者與授權連結，且**衍生輪廓資料會被 ShareAlike 感染**。建議：只用來對照校正，**不要**讓輸出的 SVG 輪廓直接衍生自照片描邊。 |
 | 3 個 `.glb`（3D Warehouse） | **未確認** —— API 未回傳 license／copyright；受 Trimble 3D Warehouse Terms of Use 管轄，非 CC | ❌ 不可 |
-| 4 張 `render-*.png` | 3D Warehouse 模型的衍生物 | ⚠️ 最終仍進版控，授權鏈不乾淨 → `ATTRIBUTION.md` §3 |
+| 4 張 `render-*-glb-ccby.png` | **CC BY 4.0**（Sketchfab 模型的衍生物） | ✅ 進版控，授權鏈完整 → `ATTRIBUTION.md` §3 |
+| ~~4 張 `render-*-glb-3dw.png`~~ | 3D Warehouse 模型的衍生物 | ❌ 曾進版控，**2026-08-05 已移除** → `ATTRIBUTION.md` §3.3 |
 | `shape/` 24 張 PNG | Toyota／iRent 官方行銷去背圖，**all rights reserved** | ❌ 不可 → `ATTRIBUTION.md` §4.2 |
 | 車輛外觀本身 | Toyota 對車體造型保有設計權；上述模型皆為第三方仿製，非原廠授權資產 | — 產出的**抽象虛線輪廓**風險低，但不應散布模型或渲圖本身 |
 
@@ -124,7 +136,7 @@
 
 **2026-08-05 修訂結論：** 改為只排除三顆 3DW 模型與 `shape/` 目錄。
 Commons 照片（CC BY-SA 4.0）與 Sketchfab 模型（CC BY 4.0）已逐項完成作者與授權標示後進版控；
-`render-*.png` 與 `generated/` 產物進版控但授權鏈未清理完成。
+`render-*-glb-ccby.png` 與 `generated/` 產物進版控，授權鏈已清理完成（2026-08-05）。
 完整的進版控範圍、標示義務與補救計畫見 [`ATTRIBUTION.md`](./ATTRIBUTION.md)。
 
 ---

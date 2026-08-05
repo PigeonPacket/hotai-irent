@@ -36,15 +36,18 @@
    "width_mm": 1825,
    "height_mm": 1620,
    "wheelbase_mm": 2640,
-   "source": "3D Warehouse GLB render (INTERNAL VALIDATION ONLY)"
+   "source": "Sketchfab CC BY 4.0 GLB render — \"Toyota Corolla Cross\" by Nieve5677 (https://sketchfab.com/niev), CC BY 4.0",
+   "model_license": "CC-BY-4.0",
+   "model_author": "Nieve5677 (https://sketchfab.com/niev)",
+   "model_url": "https://sketchfab.com/3d-models/toyota-corolla-cross-cc503d26ea694dce85e7d0f1491b0e30"
   },
   "outline_paths": 1,
-  "outline_pts": 78,
+  "outline_pts": 74,
   "detail_paths": 130,
-  "detail_pts": 666,
+  "detail_pts": 846,
   "ground_paths": 5,
-  "svg_bytes": 13648,
-  "secs": 10.0
+  "svg_bytes": 17893,
+  "secs": 8.6
  },
  "rf": {
   "meta": {
@@ -83,15 +86,18 @@
    "width_mm": 1825,
    "height_mm": 1620,
    "wheelbase_mm": 2640,
-   "source": "3D Warehouse GLB render (INTERNAL VALIDATION ONLY)"
+   "source": "Sketchfab CC BY 4.0 GLB render — \"Toyota Corolla Cross\" by Nieve5677 (https://sketchfab.com/niev), CC BY 4.0",
+   "model_license": "CC-BY-4.0",
+   "model_author": "Nieve5677 (https://sketchfab.com/niev)",
+   "model_url": "https://sketchfab.com/3d-models/toyota-corolla-cross-cc503d26ea694dce85e7d0f1491b0e30"
   },
   "outline_paths": 1,
-  "outline_pts": 78,
+  "outline_pts": 74,
   "detail_paths": 130,
-  "detail_pts": 712,
+  "detail_pts": 845,
   "ground_paths": 5,
-  "svg_bytes": 14346,
-  "secs": 9.9
+  "svg_bytes": 17898,
+  "secs": 8.6
  },
  "lr": {
   "meta": {
@@ -130,15 +136,18 @@
    "width_mm": 1825,
    "height_mm": 1620,
    "wheelbase_mm": 2640,
-   "source": "3D Warehouse GLB render (INTERNAL VALIDATION ONLY)"
+   "source": "Sketchfab CC BY 4.0 GLB render — \"Toyota Corolla Cross\" by Nieve5677 (https://sketchfab.com/niev), CC BY 4.0",
+   "model_license": "CC-BY-4.0",
+   "model_author": "Nieve5677 (https://sketchfab.com/niev)",
+   "model_url": "https://sketchfab.com/3d-models/toyota-corolla-cross-cc503d26ea694dce85e7d0f1491b0e30"
   },
   "outline_paths": 1,
-  "outline_pts": 88,
+  "outline_pts": 83,
   "detail_paths": 130,
-  "detail_pts": 685,
+  "detail_pts": 910,
   "ground_paths": 5,
-  "svg_bytes": 14095,
-  "secs": 9.6
+  "svg_bytes": 19007,
+  "secs": 9.0
  },
  "rr": {
   "meta": {
@@ -177,14 +186,17 @@
    "width_mm": 1825,
    "height_mm": 1620,
    "wheelbase_mm": 2640,
-   "source": "3D Warehouse GLB render (INTERNAL VALIDATION ONLY)"
+   "source": "Sketchfab CC BY 4.0 GLB render — \"Toyota Corolla Cross\" by Nieve5677 (https://sketchfab.com/niev), CC BY 4.0",
+   "model_license": "CC-BY-4.0",
+   "model_author": "Nieve5677 (https://sketchfab.com/niev)",
+   "model_url": "https://sketchfab.com/3d-models/toyota-corolla-cross-cc503d26ea694dce85e7d0f1491b0e30"
   },
   "outline_paths": 1,
-  "outline_pts": 87,
+  "outline_pts": 85,
   "detail_paths": 130,
-  "detail_pts": 680,
+  "detail_pts": 847,
   "ground_paths": 5,
-  "svg_bytes": 14019,
-  "secs": 10.9
+  "svg_bytes": 18114,
+  "secs": 9.1
  }
 }

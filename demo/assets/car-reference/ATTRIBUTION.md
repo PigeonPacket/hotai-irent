@@ -14,8 +14,9 @@
 |---|---|---|
 | 12 張 `phone-*-commons-*.jpg` | **CC BY-SA 4.0** | ✅ 已標示（§1） |
 | `model-corolla-cross-sketchfab-ccby.glb` | **CC BY 4.0** | ✅ 已標示（§2） |
-| 4 張 `render-*-glb-3dw.png` | 衍生自授權未確認的 3DW 模型 | ⚠️ 有，但授權鏈不乾淨（§3） |
-| `generated/` 的 SVG／PNG／`build-report.json` | 同上（衍生自同一批渲圖） | ⚠️ 同上（§3） |
+| 4 張 `render-*-glb-ccby.png` | **CC BY 4.0 衍生物**（衍生自 §2 的模型） | ✅ 授權鏈完整（§3） |
+| `generated/` 的 SVG／PNG／`build-report.json` | 同上（衍生自同一批渲圖） | ✅ 同上（§3） |
+| ~~4 張 `render-*-glb-3dw.png`~~ | 衍生自授權未確認的 3DW 模型 | ❌ **已於 2026-08-05 從版控移除**；git 歷史仍保有（§3.3） |
 | 3 顆 `model-*-3dw-*.glb` | **未確認**，Trimble 3D Warehouse ToS | ❌ 已 gitignore，**未散布**（§4） |
 | `shape/` 目錄 | **All rights reserved**（Toyota／和泰 iRent 官方行銷圖） | ❌ 已 gitignore，**未散布**（§4） |
 
@@ -60,8 +61,11 @@
 - 但若把照片**描邊**、裁切、疊圖、或讓輪廓 SVG 直接衍生自照片像素 → 該 SVG 就是衍生作品，
   **必須連帶以 CC BY-SA 4.0 釋出**，並標示原攝影者。
 
-> ⚠️ 目前 `generated/` 的 SVG **不是**衍生自這些照片（見 §3，它們衍生自 3DW 渲圖），
+> ⚠️ 目前 `generated/` 的 SVG **不是**衍生自這些照片（見 §3，它們衍生自 §2 的 CC BY 模型渲圖），
 > 所以尚未觸發 ShareAlike。日後若改成描照片，這條就會生效，屆時必須重新評估整個 repo 的授權相容性。
+>
+> 這些照片在本次重建中只用於**比對驗證**（把渲出的輪廓疊上去目視檢查世代與比例是否吻合），
+> 未對照片像素做任何描邊或裁切合成 → 不構成改作，不被 ShareAlike 感染。
 
 ---
 
@@ -87,7 +91,11 @@
 > Source: <https://sketchfab.com/3d-models/toyota-corolla-cross-cc503d26ea694dce85e7d0f1491b0e30>
 
 CC BY **不具 copyleft 感染性** —— 由本模型產生的渲圖與輪廓可自由授權，只要保留上述標示。
-這正是它比 §4 那三顆 3DW 模型乾淨的地方。
+這正是它比 §4 那三顆 3DW 模型乾淨的地方，`render-*-glb-ccby.png` 與 `generated/`
+全部產物即衍生自本模型（§3）。
+
+> ⚠️ 下面的「身分驗證」證明的是**這個 CC BY 宣告確實存在且對應這個檔案**，
+> 不等於證明上傳者對網格擁有可授權的權利。上游的殘餘不確定性請一併讀 **§3.4**。
 
 ### 身分驗證（2026-08-05）
 
@@ -120,50 +128,104 @@ GLB 的 `asset.copyright` 欄位是空的，因此以 Sketchfab **公開 API**
 
 ---
 
-## 3. ⚠️ 授權鏈不乾淨：`render-*-glb-3dw.png` 與 `generated/` 的 SVG
+## 3. ✅ 授權鏈已清理：`render-*-glb-ccby.png` 與 `generated/` 的 SVG
 
-**這一節不含糊帶過，請完整閱讀。**
+**2026-08-05 更新。** 本節原本記載「授權鏈不乾淨」；補救已執行完成，內容改寫如下。
+歷史事實保留在 §3.3，**沒有刪除**。
 
-以下檔案雖由本專案自行產生，但**衍生自一顆授權未確認的第三方模型**：
+### 3.1 現況：全部衍生自 §2 的 CC BY 模型
 
-- `render-lf-glb-3dw.png`、`render-rf-glb-3dw.png`、`render-lr-glb-3dw.png`、`render-rr-glb-3dw.png`
+以下檔案由本專案自行產生，來源模型是 §2 的
+**`model-corolla-cross-sketchfab-ccby.glb`（CC BY 4.0）**：
+
+- `render-lf-glb-ccby.png`、`render-rf-glb-ccby.png`、`render-lr-glb-ccby.png`、`render-rr-glb-ccby.png`
 - `generated/guide-cuv-{lf,rf,lr,rr}.svg`
 - `generated/preview-{lines,shaded}-{lf,rf,lr,rr}.png`
 - `generated/build-report.json`
 
-### 事實陳述
+CC BY 4.0 **允許商用、允許改作、無 copyleft 感染性**，唯一義務是標示作者。
+因此這批衍生物的授權鏈是完整的：來源模型本身已進版控並完成標示（§2），
+衍生物繼承同一條標示義務，不需要其他人的許可。
 
-1. 這些檔案**全部衍生自 `model-corolla-cross-3dw-ghost.glb`** —— 一顆取自
-   [3D Warehouse](https://3dwarehouse.sketchup.com/model/ad1d6e84-a35d-484c-a9ab-f608e68fb34a) 的模型。
-2. 該模型的**授權未確認**：3D Warehouse API 未回傳任何 `license` 或 `copyright` 欄位。
-   它受 **Trimble 3D Warehouse Terms of Use** 管轄，**不是** CC 授權。
-3. **該來源模型本身未隨本 repo 散布**（已列入 `.gitignore`，見 §4）。
-   散布的只有它的渲圖與從渲圖抽出的線條。
-4. 這些 SVG 的 `<metadata id="guide-params">` 內即自帶
-   `"source": "3D Warehouse GLB render (INTERNAL VALIDATION ONLY)"` 標記 ——
-   **檔案本身就聲明了它只供內部驗證**。此標記與其進入公開 repo 的事實互相矛盾，
-   在授權鏈清理完成前，這個矛盾就是現況。
+**散布這批檔案時必須連同保留的標示**（與 §2 相同）：
 
-### 風險與立場
+> "Toyota Corolla Cross" by [Nieve5677](https://sketchfab.com/niev), licensed under
+> [CC BY 4.0](http://creativecommons.org/licenses/by/4.0/).
+> Source: <https://sketchfab.com/3d-models/toyota-corolla-cross-cc503d26ea694dce85e7d0f1491b0e30>
 
-不散布來源模型**並不自動洗乾淨衍生物**。衍生物是否構成對來源模型的再散布，
-取決於 Trimble ToS 的解釋，本專案**未取得法律意見，也不主張這些檔案授權乾淨**。
-它們留在版控中是為了保存黑客松期間的幾何推導過程與可重現性，
-**不得視為可自由再利用的資產**，也不應在商用產品中沿用。
+標示已寫進檔案本身，不依賴本文件：
 
-### 補救計畫（尚未執行）
+- 每個 SVG 的 `<desc>` 帶完整 credit 字串；
+- 每個 SVG 的 `<metadata id="guide-params">` 與 `build-report.json` 的 `meta` 帶
+  `source` / `model_license` / `model_author` / `model_url` 四個欄位；
+- 舊版那句 `"source": "3D Warehouse GLB render (INTERNAL VALIDATION ONLY)"` 已不存在。
 
-改用 §2 的 **CC BY 授權模型**（`model-corolla-cross-sketchfab-ccby.glb`）**重新生成**
-全部渲圖與輪廓 SVG，以清理授權鏈。該模型已取得並進版控，即為此準備。
+### 3.2 重建方式與可比對性
 
-重新生成後：
+相機內外參**逐項沿用**舊 `build-report.json`（`position_xyz`、`target_xyz`、
+`hfov_deg` 69.39°、`vfov_deg` 54.88°、距離 3.85 m、機高 1.5 m、四角 45/135/225/315°），
+所以新舊產物可直接疊圖比較。模型→世界的變換（均勻縮放 4.460/4.551 = 0.980、
+X／Z 置中、輪胎底面貼 y=0）經驗證可重現舊 meta 的 `fill_w`／`fill_h` 至 1e-4，
+確認兩批用的是同一個座標系。
 
-- 移除本節列出的所有 `render-*-glb-3dw.png` 與 `generated/` 產物；
-- 新產物僅需保留 §2 的 CC BY 標示，授權鏈即完整乾淨；
-- 相機參數（距離 3.85 m、機高 1.5 m、hFOV 69.39°、四角 45°）沿用 `build-report.json`，
-  幾何結果應可比對驗證。
+`generated/` 的圖層結構與命名（`#outline`／`#detail`／`#ground`、viewBox 500×375）
+維持不變，`demo/guide-lab/sources.js` 的解析與密度分級不受影響。
 
-在此之前，**本節所列檔案的授權狀態為「未確認」**。
+> 附帶修正：舊的 `render-*-glb-3dw.png` 其實**不是**用 SVG 的那組相機渲的
+> （取景與 `build-report.json` 差約 3% 畫面，`MANIFEST.md` §2 記載的俯角 17.3° 也與
+> build-report 的 15.58° 不符）。新的 `render-*-glb-ccby.png` 與 SVG 相機完全同參數，
+> 實測填充率誤差 ≤0.3%，`sources.js` 上「透視完全一致」的說法到這一版才真正成立。
+
+### 3.3 歷史事實（保留，不刪除）
+
+**曾經有一批授權未確認的衍生物進入版控，這件事不能被這次清理抹掉：**
+
+1. commit `a72c806`（*chore(assets): track car-reference research materials with attribution*）
+   把 4 張 `render-*-glb-3dw.png` 與當時的 `generated/` 產物加入版控。
+   它們衍生自 `model-corolla-cross-3dw-ghost.glb` —— 取自
+   [3D Warehouse](https://3dwarehouse.sketchup.com/model/ad1d6e84-a35d-484c-a9ab-f608e68fb34a)、
+   API 未回傳任何 `license`／`copyright` 欄位、受 **Trimble 3D Warehouse Terms of Use**
+   管轄而非 CC 授權的模型。
+2. 那批 SVG 的 metadata 自帶 `INTERNAL VALIDATION ONLY` 標記，與其進入 public repo
+   的事實互相矛盾；本文件當時已誠實記載此矛盾。
+3. **2026-08-05**：4 張 `render-*-glb-3dw.png` 已用 `git rm` 從版控移除，
+   `generated/` 全部產物以 CC BY 模型重新生成覆蓋。
+4. ⚠️ **`git rm` 只移除 HEAD，不會移除 git 歷史。** 從 `a72c806` 到移除前的那段歷史
+   仍然包含這些檔案，任何人 `git clone` 都會取得它們。
+   本專案**未執行**歷史改寫（`git filter-repo` + force push）——
+   那會改變所有既有 commit 的 SHA。若日後判定必須徹底清除，須另行評估。
+5. 三顆 3DW 模型本身**從未進入版控**（`.gitignore` 自 `2c84c2e` 起持續排除，見 §4.1），
+   此次清理**不動**那三條排除規則。
+
+### 3.4 誠實的殘餘不確定性：CC BY 模型與 3DW 模型是同一份網格
+
+重建過程中做了新舊模型的逐項比對，結果必須記錄下來：
+
+| 比對項 | `…sketchfab-ccby.glb` | `…3dw-ghost.glb` |
+|---|---|---|
+| 外接框（公尺） | 2.1823 × 1.6641 × 4.5510 | 2.1823 × 1.6641 × 4.5510 |
+| 三角形數 | 419,710 | 419,714（多 2 個廠徽貼圖四邊形） |
+| 逐材質三角形數 | 8137 / 9511 / 15738 / 310 / 12465 / … | **完全相同** |
+| 四個輪心座標 | ±0.7806, 0.3475, +1.2715 / −1.3570 | **完全相同** |
+| 材質命名 | `2020_Toyota_Corolla_Cross_*`（26 個） | `2020 Toyota Corolla Cross_*`（同 26 個，分隔字元不同） |
+| 基準四角剪影像素 IoU | — | **0.99955 – 0.999999** |
+
+→ 兩者是**同一份第三方原始模型**經不同匯出路徑（Sketchfab 直匯 vs SketchUp／SimLab 轉出）
+產生的兩個副本。這帶來兩個必須講清楚的推論：
+
+- **好的一面**：這次更換在幾何上是**零風險**的。輪廓形狀、比例、與實車的吻合度
+  在數值上不可能因為換模型而變差（剪影 IoU 0.9996 以上）。
+- **必須誠實的一面**：CC BY 的授權宣告來自 **Sketchfab 上傳者 Nieve5677**，
+  而該網格與一份無授權宣告的 3D Warehouse 副本相同 →
+  **無法確認上傳者本人即為原始建模者**。§2 的驗證證明的是
+  「這個 CC BY 宣告確實存在、且確實對應這個檔案」，**不是**
+  「上傳者對這份網格擁有可授權的權利」。
+
+本專案的立場：CC BY 是目前**唯一有明文授權宣告、且有具名作者**的可得來源，
+換過去在授權立場上是嚴格的改善（從「完全沒有授權欄位、受 Trimble ToS 管轄」
+變成「明文 CC BY 4.0 + 具名作者 + 標示義務已履行」）。
+但本專案**未取得法律意見**，也不主張上游鏈條已窮盡查證。
+另外請注意 §5：Toyota 對車體造型本身另有設計權，與模型授權是兩件事。
 
 ---
 

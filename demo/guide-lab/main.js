@@ -555,7 +555,7 @@ function snapshot() {
       ? { sight_id: mk.id, sight: mk.sight, origin: mk.origin, fitted_to_irent_bbox: state.monkFit }
       : null,
     style: { aligned: state.aligned, halo: state.halo, horizon: state.horizon, outline_stroke_px: 3, detail_stroke_px: 1.5 },
-    background: state.bg === "photo" ? { mode: "photo", src: p?.src ?? null, licence: p?.kind === "render" ? "internal-render" : "CC BY-SA 4.0" }
+    background: state.bg === "photo" ? { mode: "photo", src: p?.src ?? null, licence: p?.kind === "render" ? "CC BY 4.0 (derived from Sketchfab model)" : "CC BY-SA 4.0" }
       : { mode: state.bg, camera_mode: camCtl?.mode ?? null },
     licence: state.version === "monk"
       ? { status: "BSD-3-Clause-Clear", deliverable: true, note: "保留 assets/guides/monk/LICENSE 與 NOTICE.md；Clear 版不授予專利權" }

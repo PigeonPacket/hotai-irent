@@ -20,11 +20,12 @@ export const IRENT = {
   key: "irent",
   name: "iRent 專屬版",
   vehicle: "Toyota Corolla Cross XG10（4.46 × 1.825 × 1.62 m）",
-  licence: "授權未確認 —— 內部驗證用，不可散布",
-  licenceLevel: "danger",
+  licence: "CC BY 4.0 —— 可交付、可商用，僅須標示作者",
+  licenceLevel: "ok",
   licenceNote:
-    "來源為 3D Warehouse 的第三方 GLB 模型（Trimble ToS，非 CC）。" +
-    "demo/assets/car-reference/ 已列入 .gitignore，本頁在別台機器上可能看不到這批檔案。",
+    "輪廓與渲圖衍生自 Sketchfab 的 CC BY 4.0 模型 " +
+    "「Toyota Corolla Cross」by Nieve5677（https://sketchfab.com/niev）。" +
+    "散布時須保留 demo/assets/car-reference/ATTRIBUTION.md §2 的標示；CC BY 無 copyleft 感染性。",
   svg: (corner) => `${GEN}/guide-cuv-${corner}.svg`,
 };
 
@@ -73,28 +74,32 @@ export const MONK = {
 };
 
 /* ── 參考底圖 ───────────────────────────────────────────────────────
- * render-*.png：本專案自渲，透視與輪廓完全一致 → 判斷「輪廓抽得準不準」的首選。
+ * render-*-glb-ccby.png：本專案自渲（來源為 §IRENT 的 CC BY 模型），
+ *   相機參數與 guide-cuv-*.svg 逐項相同（build-report.json 的 position/target/fov），
+ *   實測畫面填充率誤差 ≤0.3% → 判斷「輪廓抽得準不準」的首選。
+ *   ⚠ 舊的 render-*-glb-3dw.png 已從版控移除（授權未確認，見 ATTRIBUTION.md §3）；
+ *     那批渲圖的取景與 SVG 相機還差約 3% 畫面，並非「完全一致」。
  * phone-*.jpg ：CC BY-SA 4.0，只能當比對背景，不可描邊。
  */
 export const PHOTOS = {
   lf: [
-    { src: `${REF}/render-lf-glb-3dw.png`, label: "3D 渲圖（透視完全一致）", kind: "render" },
+    { src: `${REF}/render-lf-glb-ccby.png`, label: "3D 渲圖（CC BY 模型 · 相機與輪廓同參數）", kind: "render" },
     { src: `${REF}/phone-lf-commons-graphite-A.jpg`, label: "實車 A 石墨灰 · 25mm/4:3 · 3.2–3.6m · 偏擺 33°", kind: "photo", note: "四角素材中最接近目標站位", by: "Celica21gtfour" },
     { src: `${REF}/phone-lf-commons-white-C.jpg`, label: "實車 C 白 · 27mm/16:9 · 3.8–4.2m · 偏擺 40°", kind: "photo", note: "畫面比例是 16:9，非 4:3", by: "Areaseven" },
     { src: `${REF}/phone-lf-commons-black-G.jpg`, label: "實車 G 黑 · 估距 6–8m", kind: "photo", note: "站太遠，僅供視覺參考", by: "Ethan Llamas" },
   ],
   rf: [
-    { src: `${REF}/render-rf-glb-3dw.png`, label: "3D 渲圖（透視完全一致）", kind: "render" },
+    { src: `${REF}/render-rf-glb-ccby.png`, label: "3D 渲圖（CC BY 模型 · 相機與輪廓同參數）", kind: "render" },
     { src: `${REF}/phone-rf-commons-grey-D.jpg`, label: "實車 D 灰 · 27mm/4:3 · ~3.5m · 偏擺 30°", kind: "photo", note: "rf 的最佳選擇", by: "Captainmorlypogi1959" },
     { src: `${REF}/phone-rf-commons-red-B.jpg`, label: "實車 B 紅 · 26mm/4:3 · 2.5–3m", kind: "photo", note: "全車未入鏡，只能看車頭細節", by: "オーバードライブ83" },
   ],
   lr: [
-    { src: `${REF}/render-lr-glb-3dw.png`, label: "3D 渲圖（透視完全一致）", kind: "render" },
+    { src: `${REF}/render-lr-glb-ccby.png`, label: "3D 渲圖（CC BY 模型 · 相機與輪廓同參數）", kind: "render" },
     { src: `${REF}/phone-lr-commons-graphite-A.jpg`, label: "實車 A 石墨灰 · 25mm/4:3 · 3.2–3.5m · 偏擺 28°", kind: "photo", note: "四角素材中最接近目標站位", by: "Celica21gtfour" },
     { src: `${REF}/phone-lr-commons-white-C.jpg`, label: "實車 C 白 · 27mm/16:9 · 偏擺 40°", kind: "photo", note: "畫面比例是 16:9，非 4:3", by: "Areaseven" },
   ],
   rr: [
-    { src: `${REF}/render-rr-glb-3dw.png`, label: "3D 渲圖（透視完全一致）", kind: "render" },
+    { src: `${REF}/render-rr-glb-ccby.png`, label: "3D 渲圖（CC BY 模型 · 相機與輪廓同參數）", kind: "render" },
     { src: `${REF}/phone-rr-commons-silver-E.jpg`, label: "實車 E 銀 · 焦距未知 · 3–4m · 偏擺 40°", kind: "photo", note: "EXIF 被剝除，焦距不明", by: "Captainmorlypogi1959" },
     { src: `${REF}/phone-rr-commons-silver-F.jpg`, label: "實車 F 銀 · 焦距未知 · ~3.5m · 偏擺 50°", kind: "photo", note: "偏擺最接近 45°，但機高偏高 ~1.7m", by: "Captainmorlypogi1959" },
     { src: `${REF}/phone-rr-commons-red-B.jpg`, label: "實車 B 紅 · 29mm · 3–3.5m", kind: "photo", note: "全車未入鏡，只能看車尾細節", by: "オーバードライブ83" },
