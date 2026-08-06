@@ -53,6 +53,7 @@ src/
   screens/   一個檔案一個畫面
   CONTRACT.md ← 要加畫面的人先讀這個
 assets/      模擬素材（car-<角度>.jpg 會自動被模擬相機採用）
+  README.md  ← 素材清單與**第三方授權標示**（模擬相機底圖是 CC BY 4.0，標示必須保留）
 ```
 
 **要加新畫面 / 修改共用模組前，請先讀 [`src/CONTRACT.md`](src/CONTRACT.md)。**

@@ -1,0 +1,128 @@
+# `demo/assets/` —— demo 執行時實際載入的素材
+
+這個目錄放的是 **demo 跑起來會載入的檔案**。研究素材（3D 模型、Commons 照片、
+中間產物）在 [`car-reference/`](./car-reference/)，那些**不是**執行時資源。
+
+| 檔案 | 誰在用 | 授權 |
+|---|---|---|
+| `car-{lf,rf,lr,rr}.jpg`、`car-default.jpg` | `src/camera.js` 模擬相機底圖 | **CC BY 4.0 衍生物**（見 §1） |
+| `guides/monk/**` | 引導輪廓素材 | BSD-3-Clause-Clear（見 [`guides/monk/NOTICE.md`](./guides/monk/NOTICE.md)） |
+| `car-reference/**` | 研究參考，非執行時資源 | 見 [`car-reference/ATTRIBUTION.md`](./car-reference/ATTRIBUTION.md) |
+
+---
+
+## 1. 模擬相機底圖 —— CC BY 4.0（必須保留標示）
+
+`car-lf.jpg` / `car-rf.jpg` / `car-lr.jpg` / `car-rr.jpg` / `car-default.jpg`
+是由 [`car-reference/render-{lf,rf,lr,rr}-glb-ccby.png`](./car-reference/) 加工而來，
+而那四張渲圖衍生自 **CC BY 4.0** 的 Sketchfab 模型
+（授權鏈見 `car-reference/ATTRIBUTION.md` §2 與 §3，本檔為其延伸，不取代它）。
+
+**散布本 repo 即等同散布這五張圖，以下標示必須連同保留：**
+
+> "Toyota Corolla Cross" by [Nieve5677](https://sketchfab.com/niev), licensed under
+> [CC BY 4.0](http://creativecommons.org/licenses/by/4.0/).
+> Source: <https://sketchfab.com/3d-models/toyota-corolla-cross-cc503d26ea694dce85e7d0f1491b0e30>
+
+CC BY **無 copyleft 感染性**，允許改作與商用，唯一義務是標示作者 —— 上面那段就是。
+另請注意 `ATTRIBUTION.md` §3.4（上游身分的殘餘不確定性）與 §5（Toyota 對車體造型另有設計權）。
+
+### 為什麼要另存一份而不是直接用渲圖
+
+`src/camera.js` 用 `fetch(HEAD)` 探測 `assets/car-<cornerId>.jpg`，存在就自動當模擬相機
+畫面來源（**不需要改任何程式碼**）。原始渲圖有三個問題不能直接用：
+
+1. **格式／檔名**不符 `assets/car-<cornerId>.jpg` 的約定；
+2. **比例**是 4:3 橫向，而 mock canvas 是 1080×1440（3:4 直向）＋ `cover`，
+   直接放會被裁掉車頭車尾；
+3. **會一直跳「畫面過曝」** —— 渲圖背景是平坦的 238，佔畫面約 68%，
+   遠超過 `src/quality.js` 的 `maxBrightRatio = 0.25`（`brightLum = 220`）；
+4. **也會一直跳「畫面可能模糊」** —— 純渲圖沒有感光元件雜訊也沒有路面紋理，
+   高頻能量偏低（見下方步驟 4）。
+
+### 產生方式（可重現）
+
+從 `render-<角>-glb-ccby.png`（1600×1200、8-bit 灰階、背景平坦 238）：
+
+1. **裁切**：水平裁到 x `120..1479`（車身 bbox `160..1439` 左右各留 40 px）。
+   `car-default.jpg` 不裁（x `0..1599`），車在畫面裡比較小，當通用底圖。
+2. **放進 1200×1600（3:4）直向畫布**：雙線性縮到寬 1200（scale = 1200/1360 ≈ 0.8824；
+   default 為 0.75），垂直置於 `top = 303`（default `382`），
+   上下留白用渲圖原本的 238 背景填滿 —— 因為背景是平坦色，接縫看不出來。
+   3:4 正好等於 mock canvas 的比例，`cover` 時剛好填滿、**不裁切**。
+3. **曝光**：`out = v × 0.80 × grad(y)`，`grad` 由頂端 1.02 線性降到底端 0.72。
+   純乘法所以不會產生去背光暈，陰影與邊緣的相對關係都保留；
+   由上而下的衰減讓平坦背景讀起來像「上方亮、地面暗」的環境光，而不是棚拍背景布。
+4. **局部對比（clarity）**：半徑 16 px、強度 3.0、修正量上限 ±24 的 unsharp，
+   **只作用在車體遮罩內**（遮罩取自渲圖的 238 背景，再向內侵蝕 10 px 並羽化）。
+
+   *半徑為什麼是 16 而不是 1–2*：`quality.js` 在 **160×213** 的取樣格上算指標，
+   那是本圖的 ~7.5 倍降取樣，比 8 px 細的銳化在平均掉之後完全不存在。
+   *為什麼要遮罩*：不遮的話車身輪廓會在平坦背景上長出一圈明顯的白色光暈（試過，很醜）；
+   侵蝕＋羽化之後背景完全不動，只有車體內部的板件線、輪圈、水箱罩變銳利。
+
+   這一步是**必要的**，不是美化：純渲圖的梯度能量太低，會被 `quality.js`
+   的清晰度檢查判成模糊（見下表）。實務上等同於相機 ISP 的銳化，不是造假。
+5. **輸出**：`sips -s format jpeg -s formatOptions 82`（灰階 JPEG，各約 120–155 KB）。
+
+> 想調整取景／曝光時，回到 `car-reference/render-*-glb-ccby.png` 重跑上面五步，
+> 不要在 jpg 上疊第二次處理。
+
+### 品質檢查實測（`src/quality.js` 的演算法，走瀏覽器同一條路徑）
+
+路徑：`<img 1200×1600>` → `camera.js` `drawAssetFrame()` cover 進 1080×1440
+（scale 0.9，剛好填滿無裁切）＋底部 150 px 的 `rgba(0,0,0,0.45)` 標籤條 →
+`analyzeFrame()` 取樣 160×213。
+
+**亮度／過曝**（`minAvg 55`／`maxDarkRatio 0.45`／`maxBrightRatio 0.25`）：
+
+| 檔案 | 尺寸 | 大小 | avg 亮度 | 過暗比例 | 過曝比例 | 判定 |
+|---|---|---|---|---|---|---|
+| `car-lf.jpg` | 1200×1600 | 145 KB | 147.6 | 0.4 % | 0.0 % | ✅ |
+| `car-rf.jpg` | 1200×1600 | 145 KB | 140.5 | 2.7 % | 0.0 % | ✅ |
+| `car-lr.jpg` | 1200×1600 | 150 KB | 141.8 | 1.3 % | 0.0 % | ✅ |
+| `car-rr.jpg` | 1200×1600 | 150 KB | 137.1 | 2.4 % | 0.0 % | ✅ |
+| `car-default.jpg` | 1200×1600 | 121 KB | 150.8 | 0.3 % | 0.0 % | ✅ |
+
+**清晰度**：兩代演算法都驗過，五張都 `ok = true`。
+
+| 檔案 | `variance`（舊版 ≥120） | `gradient` | `sharpness`（新版 ≥0.05） |
+|---|---|---|---|
+| `car-lf.jpg` | 1497 | 10.61 | 0.0753 |
+| `car-rf.jpg` | 2134 | 10.99 | 0.0566 |
+| `car-lr.jpg` | 1880 | 10.94 | 0.0636 |
+| `car-rr.jpg` | 2236 | 11.32 | 0.0573 |
+| `car-default.jpg` | 1378 | 9.44 | 0.0646 |
+
+> **這幾個數字是有意調出來的，改圖時請一併重驗。**
+> 梯度版的清晰度檢查有兩道關：`gradient ≥ maxGradientForBlur (9)` 時整段不判模糊，
+> 或 `sharpness ≥ minSharpness (0.05)` 時判為清晰。上表五張**兩道都過**，
+> 所以任一邊的門檻微調都還有餘裕。
+>
+> 沒有步驟 4 的 clarity 時，實測 `gradient` 只有 6.8–8.0、`sharpness` 0.030–0.040
+> —— 兩道都不過，模擬相機會固定顯示「畫面可能模糊，請對焦後再拍」。
+> 原因不是圖糊，是純渲圖缺少真實照片的高頻內容（雜訊、路面與烤漆紋理）。
+
+（`car-rf` / `car-rr` 的車身偏暗是**渲圖本身的打光**，不是加工造成的。）
+
+### 為什麼是 3:4 直向，而不是渲圖原本的 4:3 橫向
+
+因為兩種畫布方向都要能看 —— `camera.js` 的 `drawAssetFrame()` 一律 `cover`，
+所以方向選錯就會裁掉車頭車尾：
+
+| 素材方向 | 直向 1080×1440 畫布 | 橫向 1440×1080 畫布（四角拍照，PIG-13 §1.2 G1） |
+|---|---|---|
+| **3:4 直向（採用）** | 剛好填滿，零裁切 | 上下各裁掉天空／地面，**全車仍在畫面內**（可見 plate y 350–1250，車體 499–1165） |
+| 4:3 橫向（原始渲圖） | 只剩中間 56 % 寬 → **車頭與車尾被裁掉** | 剛好填滿 |
+
+直向會 graceful degrade，橫向不會，所以選直向。橫向畫布下實測仍全部通過品質檢查
+（車身占比更高，`gradient` 12.7–15.2、`sharpness` 0.091–0.126）。
+
+> 如果之後四角拍照畫面固定成橫向 4:3、而且要讓素材與 `generated/guide-cuv-*.svg`
+> 的輪廓逐像素對齊（兩者本來就同一組相機參數），那就改成直接輸出 1600×1200
+> 不裁不墊 —— 但要接受直向畫布（補拍／使用中回報）會裁掉車頭車尾。
+
+### 順帶修掉的 404
+
+`camera.js` 每次載入會探測這五個檔名。檔案不存在時 `fetch(HEAD)` 不會拋 JS error，
+但 DevTools 的 Network／Console 仍然會留五筆 404 紅字。補上檔案後就沒有了。
