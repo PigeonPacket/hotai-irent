@@ -403,3 +403,43 @@ cd demo && python3 -m http.server 8080
 4. 連跑兩次完整流程沒有 `QuotaExceededError`（照片一定要走 `state.addCapture`）。
 5. 窄視窗（375×667）版面不破，橫向不出現水平滾動。
 6. 下一站畫面不存在時有 fallback，不會卡死。
+
+---
+
+## 10. 已知技術債
+
+### 10.1 `VEHICLE_STATUS` / `setVehicleStatus` 有兩份同名但不相容的定義 🟠
+
+Wave 2 的 Track A 與 Track B 各自實作了車輛狀態機的寫入口，**兩支檔案匯出同名符號，
+但值域與函式簽名都不同**：
+
+| | `src/screens/inuse.js`（Track B） | `src/screens/vehicle.js`（Track A） |
+|---|---|---|
+| `VEHICLE_STATUS` 值 | 中文字面值：`"可租"` `"待人工"` … | 英文 id：`"available"` `"manual_review"` … |
+| 「待人工」的鍵名 | `MANUAL` | `MANUAL_REVIEW` |
+| `setVehicleStatus` 簽名 | `(state, next, detail?)` | `(state, vehicleId, value, detail?)` |
+| 回傳值 | `string`（寫入後的狀態） | `object`（`normalizeStatus()` 的解析結果） |
+| 寫入範圍 | 只有本車 `flags.vehicleStatus`，並同步鏡射 `session.vehicle.status` | 本車 `flags.vehicleStatus`；其他車 `flags.fleetStatusOverrides[id]`；鏡射另走 `syncSessionVehicleStatus()` |
+
+目前的使用者：`supplement.js` → `inuse.js`；`ops.js` → `vehicle.js`。
+
+**為什麼現在沒壞**：`vehicle.js` 寫回 `flags.vehicleStatus` 時刻意存**中文標籤**，
+而它的 `normalizeStatus()` 認得中文標籤也認得英文 id，所以兩邊讀同一個 flag 不會打架。
+端到端劇本實測相容，這是**刻意設計的互通**，不是巧合。
+
+**為什麼還是技術債**：同名不同簽名，import 錯一支不會有任何錯誤訊息 ——
+
+- 拿 `vehicle.js` 的簽名去呼叫 `inuse.js` 的函式，`vehicleId` 會被當成 `next` 寫進狀態，
+  timeline 會留下一筆「車輛狀態：可租 → veh_001」，畫面照樣渲染，沒人會發現。
+- 拿 `inuse.js` 的 `VEHICLE_STATUS.MANUAL` 去對 `vehicle.js` 的常數，得到 `undefined`
+  （那邊叫 `MANUAL_REVIEW`），比較永遠為 false，分支靜默走錯。
+
+**建議的收斂方向**（需要單獨一個 PR，會同時改到兩個模組的介面，不要順手做）：
+
+1. 把狀態機常數與 `normalizeStatus()` 抽到 `src/vehicle-status.js`（新的共用模組），
+   以 **`vehicle.js` 的英文 id 為正規值**，中文只當顯示標籤。
+2. 保留單一 `setVehicleStatus(state, vehicleId, value, detail?)` 簽名（涵蓋性較廣的那個），
+   `inuse.js` 的呼叫端補上 `state.session.vehicle.id`。
+3. `inuse.js` / `vehicle.js` 改成 re-export 共用模組，避免既有 import 路徑一次全斷。
+4. 驗收：`?nav=1` 走完整劇本，`#/ops` 的狀態與 timeline 的 `EVENTS.VEHICLE_STATUS`
+   事件序列與收斂前一致。

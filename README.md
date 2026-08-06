@@ -12,7 +12,10 @@ PigeonPacket 團隊 · [2026 和泰 AI 黑客松](https://ht-hackathon.tw/tw/cha
 cd demo && python3 -m http.server 8080
 ```
 
-手機瀏覽器開 `http://localhost:8080`（需 HTTPS 或 localhost 才能用相機）。
+開 <http://localhost:8080/>。八畫面劇本、URL 參數與 3 分鐘演示流程見 [`demo/README.md`](demo/README.md)。
+
+> 相機需 **HTTPS 或 localhost**。手機連區網 IP（`http://192.168.x.x:8080`）開不了相機，
+> 會自動降級成模擬相機；要用真相機請開 HTTPS 通道。
 
 ## Linear
 

@@ -17,16 +17,18 @@
   ⚠ 出門前先做一次「鏡頭視野校正」（面板最上方的模式切換，或 ?mode=calib）
     整套輪廓假設等效焦距 26 mm / hFOV 69.39°，但各家手機主鏡頭在 23–28 mm 之間，
     而且 getUserMedia 給的串流視野常常跟相機 App 拍照的視野不一樣（額外裁切／防手震／sensor crop）。
-    沒校過的話，鏡頭差 8% 會讓你站對位置卻覺得輪廓不對，然後誤判成輪廓錯。
+    沒校過的話，你站對位置卻覺得輪廓不對，然後誤判成輪廓錯 —— 這支存在的目的就是把
+    「鏡頭問題」跟「輪廓問題」分開。（鏡頭本身的影響其實不大：24 或 28 mm 對 26 mm 的
+    角點偏差只有 4.4%，見 docs/PIG-13-UX-Flow.md §1.2；但校正過才知道你的串流是哪一個。）
     校正只要對著門框或 A4 紙量一次，結果會記在這支手機的 localStorage 裡。
 
   怎麼開
     cd demo && python3 -m http.server 8091
     手機連同一個 Wi-Fi → http://<電腦IP>:8091/guide-lab.html
     ⚠ 即時相機需要 HTTPS 或 localhost。用 http://<IP>:8091 開會拿不到相機，
-      本頁會自動降級成模擬畫面（不會卡死）。要真的用相機請加 ?mock=0 並用
-      HTTPS 通道（例如 `npx localtunnel --port 8091` 或 ngrok）。
-    ?mock=1  強制模擬相機
+      本頁會自動降級成模擬畫面（不會卡死）。要真的用相機就得走 HTTPS 通道
+      （例如 `npx localtunnel --port 8091` 或 ngrok），並且不要帶 ?mock=1。
+    ?mock=1  強制模擬相機（只認 =1；不帶這個參數就是嘗試真相機）
     ?corner=lf|rf|lr|rr  指定起始角度
     ?mode=calib  直接進鏡頭視野校正
 
