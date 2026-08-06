@@ -319,11 +319,36 @@ export function mount(root, ctx) {
   // 截止時間存成絕對時間戳，避免重新整理 / 切換 ?speed 時被重算。
   const nowAtMount = Date.now();
   const firstOpen = !state.getFlag("unlockedAt");
-  const unlockedAt = firstOpen ? state.setFlag("unlockedAt", nowAtMount) : state.getFlag("unlockedAt");
+  /**
+   * deadline 是絕對時間戳（所以重新整理不會被重算），但它是用「開窗當下的 demo 時鐘」
+   * 算出來的。簡報者若先在一般速度下走到這一站、之後才補上 ?speed=fast 重載，
+   * 同一段真實時間會被換算成 900 個 demo 分鐘 → 倒數顯示「898:42」這種壞掉的數字。
+   * 偵測到 speed 換過就把窗口重開一次（= 「重新開窗」按鈕的語意），倒數才會回到 15:00。
+   */
+  const storedSpeed = state.getFlag("supplementSpeed", null);
+  const speedChanged = !firstOpen && storedSpeed != null && storedSpeed !== config.speed;
+  const restart = firstOpen || speedChanged;
+
+  const unlockedAt = restart ? state.setFlag("unlockedAt", nowAtMount) : state.getFlag("unlockedAt");
+  if (restart) {
+    state.setFlag("supplementDeadline", nowAtMount + demoMinutesToMs(WINDOW_MINUTES));
+    state.setFlag("supplementClosed", null);
+  }
+  if (storedSpeed !== config.speed) state.setFlag("supplementSpeed", config.speed);
   const deadline =
     state.getFlag("supplementDeadline") ||
     state.setFlag("supplementDeadline", unlockedAt + demoMinutesToMs(WINDOW_MINUTES));
   const windowMs = Math.max(1, deadline - unlockedAt);
+
+  if (speedChanged) {
+    state.addEvent(EVENTS.SUPPLEMENT_OPEN, {
+      label: `補拍窗口依 demo 時鐘重新開啟（?speed=${config.speed}）`,
+      windowMinutes: WINDOW_MINUTES,
+      deadline: new Date(deadline).toISOString(),
+      speed: config.speed,
+      speedChanged: true,
+    });
+  }
 
   if (firstOpen) {
     state.addEvent(EVENTS.UNLOCK, {
@@ -572,6 +597,7 @@ export function mount(root, ctx) {
     const now = Date.now();
     state.setFlag("unlockedAt", now);
     state.setFlag("supplementDeadline", now + demoMinutesToMs(WINDOW_MINUTES));
+    state.setFlag("supplementSpeed", config.speed);
     state.setFlag("supplementClosed", null);
     state.addEvent(EVENTS.SUPPLEMENT_OPEN, {
       label: `補拍窗口重新開啟（demo 操作 · ${WINDOW_MINUTES} 分鐘）`,
