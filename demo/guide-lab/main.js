@@ -13,6 +13,8 @@ import {
   visibleSet, baseCamFor, TIERS,
 } from "./sources.js";
 import { createLabCamera, cameraApiAvailable, secureOk } from "./labcam.js";
+import { createCalibrator, savedCalibration } from "./calibui.js";
+import { ASSUMED_FOCAL_MM } from "./calib.js";
 
 const $ = (s, r = document) => r.querySelector(s);
 const SVGNS = "http://www.w3.org/2000/svg";
@@ -23,6 +25,7 @@ const LS_NOTES = "guideLab.notes.v1";
 const validCorner = (c) => CORNERS.some((x) => x.id === c);
 
 const state = {
+  mode: "guide",              // guide = 驗證輪廓 | calib = 校正鏡頭視野
   corner: "lf",
   version: "irent",           // irent | monk
   bg: "blank",                // blank | photo | camera
@@ -40,12 +43,16 @@ Object.assign(state, safeParse(lsGet(LS_STATE)) || {});
 state.cam = { ...BASE_PARAMS, ...(state.cam || {}) };
 if (validCorner(qs.get("corner"))) state.corner = qs.get("corner");
 if (!validCorner(state.corner)) state.corner = "lf";
+if (qs.get("mode") === "calib") state.mode = "calib";
+if (state.mode !== "calib") state.mode = "guide";
 
 let report = null;            // build-report.json
 let guides = {};              // cacheKey -> {outline,detail,ground}
 let cur = null;               // 目前使用中的 guide
 let baseCam = null;
 let camCtl = null;
+let calib = null;             // 鏡頭視野校正器（calibui.js）
+let calibResult = savedCalibration();  // 上次「採用」的校正結論，開頁就要知道
 let notes = (() => { const n = safeParse(lsGet(LS_NOTES)); return Array.isArray(n) ? n : []; })();
 let monkFitXf = null;         // Monk 縮放對齊用的 {s, tx, ty}
 
@@ -78,6 +85,9 @@ function build() {
       <img class="bg" id="bgPhoto" alt="" hidden>
       <video class="bg" id="bgVideo" playsinline muted hidden></video>
       <canvas class="bg" id="bgMock" hidden></canvas>
+      <!-- 校正時的「凍結畫格」：手持live 拖標線會抖，凍結後才標得準。
+           尺寸永遠等於 video.videoWidth/Height —— 校正計算只認串流像素。 -->
+      <canvas class="bg" id="bgFreeze" hidden></canvas>
       <!-- halo 與主線各自是獨立的 <g>（不用 <use> 的 shadow tree）。
            多寫一次 d 的成本很低，換掉「某些瀏覽器下 <use> 不更新 → 整個疊圖空白」的風險。 -->
       <svg class="ov" id="ov" viewBox="0 0 ${VB.w} ${VB.h}" preserveAspectRatio="xMidYMid meet"
@@ -90,8 +100,10 @@ function build() {
         <g id="m-ground"  class="main ground"></g>
         <g id="m-outline" class="main outline"></g>
       </svg>
+      <div class="cal-ov" id="calOv" hidden></div>
       <div class="hud hud-tl">
         <div class="stand" id="stand"></div>
+        <div class="calhud" id="calHud"></div>
         <div class="lic" id="lic"></div>
       </div>
       <div class="hud hud-bl" id="warn"></div>
@@ -104,7 +116,13 @@ function build() {
 
   <aside class="drawer open" id="drawer">
     <div class="drawer-in">
-      <section>
+      <section data-mode="both">
+        <h2>模式</h2>
+        <div class="seg" id="modeSeg"></div>
+        <div class="fine" id="modeNote"></div>
+      </section>
+
+      <section data-mode="guide">
         <h2>交付版本 <span class="hint">B5</span></h2>
         <div class="seg" id="verSeg"></div>
         <div class="licbox" id="licBox"></div>
@@ -120,14 +138,14 @@ function build() {
         </div>
       </section>
 
-      <section>
+      <section data-mode="guide">
         <h2>背景 <span class="hint">B2</span></h2>
         <div class="seg" id="bgSeg"></div>
         <label class="row" id="photoRow"><span>照片</span><select id="photoSel"></select></label>
         <div class="note" id="bgNote"></div>
       </section>
 
-      <section>
+      <section data-mode="guide">
         <h2>相機參數 <span class="hint">B3</span></h2>
         <div id="sliders"></div>
         <div class="readout" id="readout"></div>
@@ -155,7 +173,7 @@ function build() {
         </details>
       </section>
 
-      <section>
+      <section data-mode="guide">
         <h2>細節線密度 <span class="hint">B4</span></h2>
         <div class="seg" id="tierSeg"></div>
         <label class="row" id="manualRow" hidden>
@@ -165,14 +183,14 @@ function build() {
         <div class="note" id="tierNote"></div>
       </section>
 
-      <section>
+      <section data-mode="guide">
         <h2>線條 <span class="hint">B6</span></h2>
         <button class="big" id="alignBtn"></button>
         <label class="row check"><input type="checkbox" id="haloChk"><span>白線加深色 halo</span></label>
         <label class="row check"><input type="checkbox" id="horizonChk"><span>畫地平線（= 相機高度）</span></label>
       </section>
 
-      <section>
+      <section data-mode="guide">
         <h2>記下目前設定</h2>
         <input id="verdict" placeholder="一句話結論，例：3.6m/1.55m 對得上，中等密度夠用">
         <button class="big primary" id="noteBtn">記下目前設定並複製 JSON</button>
@@ -209,7 +227,9 @@ const SLIDERS = [
   { k: "distance", label: "距離", min: 3.0, max: 4.5, step: 0.05, unit: "m" },
   { k: "height", label: "相機高", min: 1.1, max: 1.8, step: 0.01, unit: "m" },
   { k: "yaw", label: "偏擺", min: 30, max: 60, step: 1, unit: "°", note: "近似最弱的一軸，離 45° 越遠形狀越不可信" },
-  { k: "focal", label: "等效焦距", min: 24, max: 28, step: 0.5, unit: "mm", note: "此軸為精確解（純 FOV 變化）；相機串流不是 4:3 時也用它補償" },
+  // 上下限放寬到 20–34：校正模式量到的畫框等效焦距要能直接套進來。
+  // 16:9 串流被 4:3 畫框 cover 裁掉 25% 時，畫框等效焦距會到 34 mm —— 舊的 24–28 裝不下。
+  { k: "focal", label: "等效焦距", min: 20, max: 34, step: 0.1, unit: "mm", note: "此軸為精確解（純 FOV 變化）。不確定你的手機是不是 26 mm？先跑一次「鏡頭視野校正」" },
 ];
 
 function buildSliders() {
@@ -368,6 +388,55 @@ function render() {
 
   updateTierNote();
   updateLicence();
+  updateCalHud();
+  persist();
+}
+
+/**
+ * 「這支手機的鏡頭校過了沒、校完的值套上去了沒」—— 站在車前時最該知道的一件事。
+ * 沒有這個提示，使用者會拿一個未經驗證的 26 mm 假設去判輪廓的死刑。
+ */
+/** 校正值有沒有真的套進焦距滑桿（比對滑桿能設到的值，被夾過的也算套用） */
+function calibApplied() {
+  const c = calibResult;
+  return !!c && Math.abs(state.cam.focal - (c.slider_focal_mm ?? c.frame_focal_equiv_mm)) <= 0.25;
+}
+
+function updateCalHud() {
+  const c = calibResult;
+  if (!c) {
+    setHTML("#calHud", `<span class="calchip none">鏡頭未校正 · 沿用 ${ASSUMED_FOCAL_MM} mm 假設</span>`);
+    return;
+  }
+  const applied = calibApplied();
+  const dev = c.deviation_pct;
+  const lvl = c.verdict === "ok" ? "good" : c.verdict === "warn" ? "warn" : "bad";
+  // 校了卻沒套用，比沒校還糟糕 —— 你以為自己知道，其實疊圖還是照 26 mm 畫的
+  const tail = applied
+    ? "已套用"
+    : `<b class="bad">未套用</b>（滑桿還在 ${state.cam.focal.toFixed(1)} mm）`;
+  setHTML("#calHud",
+    `<span class="calchip ${applied ? lvl : "bad"}">鏡頭 ${c.frame_focal_equiv_mm.toFixed(1)} mm` +
+    `（${dev >= 0 ? "+" : ""}${dev.toFixed(1)}% ±${c.uncertainty_1sigma_pct.toFixed(1)}%）· ${tail}</span>`);
+}
+
+function setMode(v) {
+  state.mode = v === "calib" ? "calib" : "guide";
+  segSync($("#modeSeg"), () => state.mode);
+  document.body.classList.toggle("mode-calib", state.mode === "calib");
+  for (const s of document.querySelectorAll(".drawer section[data-mode]")) {
+    s.hidden = s.dataset.mode !== "both" && s.dataset.mode !== state.mode;
+  }
+  setHTML("#modeNote", state.mode === "calib"
+    ? "先確認<b>你這支手機的串流視野</b>跟輪廓的 26 mm 假設差多少。差 8% 就足以讓你把鏡頭問題誤判成輪廓錯。"
+    : "站在車前比對輪廓。若覺得怎麼站都對不上，先去「鏡頭校正」排除鏡頭因素。");
+  if (state.mode === "calib") {
+    $("#drawer").classList.add("open");
+    $("#drawerBtn").setAttribute("aria-expanded", "true");
+  }
+  applyBackground();
+  if (state.mode === "calib") calib?.activate(); else calib?.deactivate();
+  render();
   persist();
 }
 
@@ -467,14 +536,17 @@ function photoList() { return PHOTOS[state.corner] || []; }
 
 function applyBackground() {
   const blank = $("#bgBlank"), img = $("#bgPhoto"), vid = $("#bgVideo"), mock = $("#bgMock");
-  blank.hidden = state.bg !== "blank";
-  img.hidden = state.bg !== "photo";
-  const camOn = state.bg === "camera";
+  // 校正模式一定要看相機串流（要量的就是它），但不動 state.bg —— 切回驗證模式要能還原使用者的選擇
+  const bg = state.mode === "calib" ? "camera" : state.bg;
+  blank.hidden = bg !== "blank";
+  img.hidden = bg !== "photo";
+  const camOn = bg === "camera";
   $("#photoRow").hidden = state.bg !== "photo";
+  if (state.mode !== "calib") $("#bgFreeze").hidden = true;
 
   if (!camOn) { camCtl?.stop(); vid.hidden = true; mock.hidden = true; }
 
-  if (state.bg === "photo") {
+  if (bg === "photo") {
     const list = photoList();
     const p = list[Math.min(state.photoIdx, list.length - 1)];
     if (p) {
@@ -484,11 +556,11 @@ function applyBackground() {
         ? `<b>3D 渲圖</b>：透視與輪廓完全一致 → 判斷「輪廓抽得準不準」用這張。${p.note ? "<br>" + p.note : ""}`
         : `<b class="bad">CC BY-SA 4.0</b>（${p.by}）—— 只能當比對背景，<b>不可描邊產生輪廓</b>（ShareAlike 會感染衍生 SVG）。<br>${p.note || ""}`;
     }
-  } else if (state.bg === "blank") {
+  } else if (bg === "blank") {
     $("#bgNote").innerHTML = "空白框一半亮一半暗：白線的 halo 在亮地面上還讀不讀得到，看右半邊。";
   } else {
     $("#bgNote").innerHTML = secureOk
-      ? "相機需 HTTPS 或 localhost。串流不是 4:3 時會被裁切，左右視野變窄 → 用焦距滑桿補償。"
+      ? "相機需 HTTPS 或 localhost。串流不是 4:3 時會被裁切，左右視野變窄 → 用焦距滑桿補償（或跑一次鏡頭校正，它會直接算出該填多少）。"
       : `<span class="bad">目前不是 HTTPS / localhost</span>，瀏覽器不會給相機，已自動降級成模擬畫面。`;
     camCtl.start({ mock: qs.get("mock") === "1" }).then((r) => {
       const s = r.settings;
@@ -497,6 +569,7 @@ function applyBackground() {
         $("#bgNote").innerHTML += `<br>串流 ${s.width}×${s.height}（${ar.toFixed(2)}:1）` +
           (Math.abs(ar - 4 / 3) < 0.05 ? " <span class=\"good\">✓ 4:3</span>" : " <span class=\"warn\">⚠ 非 4:3，畫面已裁切</span>");
       }
+      calib?.refresh();
     });
   }
 }
@@ -557,6 +630,8 @@ function snapshot() {
     style: { aligned: state.aligned, halo: state.halo, horizon: state.horizon, outline_stroke_px: 3, detail_stroke_px: 1.5 },
     background: state.bg === "photo" ? { mode: "photo", src: p?.src ?? null, licence: p?.kind === "render" ? "CC BY 4.0 (derived from Sketchfab model)" : "CC BY-SA 4.0" }
       : { mode: state.bg, camera_mode: camCtl?.mode ?? null },
+    // 有沒有校過鏡頭，決定這筆記錄能不能拿來當「輪廓對不對」的證據。null = 沒校過，結論要打折。
+    lens_calibration: calibResult ? { ...calibResult, applied_to_focal_slider: calibApplied() } : null,
     licence: state.version === "monk"
       ? { status: "BSD-3-Clause-Clear", deliverable: true, note: "保留 assets/guides/monk/LICENSE 與 NOTICE.md；Clear 版不授予專利權" }
       : { status: "unverified", deliverable: false, note: "3D Warehouse 模型衍生，內部驗證用，不可散布" },
@@ -601,6 +676,11 @@ function persistNotes() {
 }
 
 function wire() {
+  seg($("#modeSeg"), [
+    { v: "guide", label: "驗證輪廓", title: "站在車前比對車體輪廓" },
+    { v: "calib", label: "鏡頭校正", title: "量出這支手機串流的實際視野" },
+  ], () => state.mode, setMode);
+
   seg($("#tabs"), CORNERS.map((c) => ({ v: c.id, label: c.label, title: c.en })),
     () => state.corner,
     (v) => { state.corner = v; state.photoIdx = 0; state.monkIdx = 0; segSync($("#tabs"), () => state.corner); refreshSelects(); loadCurrent(); applyBackground(); });
@@ -657,7 +737,9 @@ function wire() {
     notes = []; persistNotes(); $("#fallbackTa").hidden = true; $("#noteStatus").textContent = "";
   };
 
-  addEventListener("orientationchange", () => setTimeout(render, 300));
+  addEventListener("orientationchange", () => setTimeout(() => { render(); calib?.refresh(); }, 300));
+  // 校正的標線位置是照畫框幾何算的，畫框一變就要重畫（不然標線會跟畫面錯開 → 量到錯的值）
+  addEventListener("resize", () => calib?.refresh());
 }
 
 function refreshSelects() {
@@ -689,7 +771,27 @@ async function boot() {
 
   camCtl = createLabCamera($("#bgVideo"), $("#bgMock"), (mode, info) => {
     if (mode === "mock") toast(`模擬相機：${info.reasonText || info.reason}`);
+    calib?.refresh();
   });
+
+  calib = createCalibrator({
+    frame: $("#frame"),
+    video: $("#bgVideo"),
+    mockCanvas: $("#bgMock"),
+    freezeCanvas: $("#bgFreeze"),
+    overlay: $("#calOv"),
+    baseDistanceM: BASE_PARAMS.distance,
+    getCamMode: () => camCtl?.mode,
+    getSettings: () => camCtl?.settings,
+    onChange: (r) => { calibResult = r; updateCalHud(); },
+    onApply: (mm) => {
+      state.cam.focal = Math.round(mm * 10) / 10;
+      // 套用完直接回驗證模式：使用者要的是「現在輪廓對得上了嗎」，不是再看一次數字
+      setMode("guide");
+      toast(`焦距滑桿已設成 ${state.cam.focal.toFixed(1)} mm`);
+    },
+  });
+  $(".drawer-in").insertBefore(calib.section, $(".drawer-in").children[1]);
   if (!cameraApiAvailable || !secureOk) {
     // 讓使用者一眼知道相機會降級，不用等點下去才發現
     $("#bgSeg")?.querySelector('[data-v="camera"]')?.setAttribute("data-degraded", "1");
@@ -701,7 +803,7 @@ async function boot() {
   } catch { /* 用 FALLBACK_META */ }
 
   await loadCurrent();
-  applyBackground();
+  setMode(state.mode);   // 內含 applyBackground() + render()
 }
 
 boot();

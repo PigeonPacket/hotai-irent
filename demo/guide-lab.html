@@ -14,6 +14,12 @@
     3. 交付要用 iRent 專屬版還是 Monk BSD 版
   沒有自動測試可以驗這件事，只能人眼看 —— 所以每個設計決定都服務「站在車前那三分鐘」。
 
+  ⚠ 出門前先做一次「鏡頭視野校正」（面板最上方的模式切換，或 ?mode=calib）
+    整套輪廓假設等效焦距 26 mm / hFOV 69.39°，但各家手機主鏡頭在 23–28 mm 之間，
+    而且 getUserMedia 給的串流視野常常跟相機 App 拍照的視野不一樣（額外裁切／防手震／sensor crop）。
+    沒校過的話，鏡頭差 8% 會讓你站對位置卻覺得輪廓不對，然後誤判成輪廓錯。
+    校正只要對著門框或 A4 紙量一次，結果會記在這支手機的 localStorage 裡。
+
   怎麼開
     cd demo && python3 -m http.server 8091
     手機連同一個 Wi-Fi → http://<電腦IP>:8091/guide-lab.html
@@ -22,6 +28,7 @@
       HTTPS 通道（例如 `npx localtunnel --port 8091` 或 ngrok）。
     ?mock=1  強制模擬相機
     ?corner=lf|rf|lr|rr  指定起始角度
+    ?mode=calib  直接進鏡頭視野校正
 
   獨立頁面，不走 demo/index.html 那套 router。vanilla JS、零依賴、零 build step。
 -->

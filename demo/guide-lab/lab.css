@@ -198,6 +198,100 @@ code { font-size: 10.5px; background: rgba(255,255,255,.08); padding: 0 3px; bor
 .sens td:last-child { text-align: right; font-weight: 700; }
 .sens p { margin: 5px 0; }
 
+/* ── 鏡頭視野校正 ───────────────────────────────────────── */
+/* 校正模式：整個串流都要看得到（contain），不然被 cover 裁掉的邊緣根本標不到。
+   媒體元素的實際位置由 calibui.js 用內聯 style 指定，這裡只負責藏掉驗證模式的東西。 */
+body.mode-calib .ov,
+body.mode-calib .tabs,
+body.mode-calib .hud-tl,
+body.mode-calib .hud-bl,
+body.mode-calib .loading { display: none; }
+.frame.calibrating { background: #05070a; }
+
+.cal-ov { position: absolute; inset: 0; touch-action: none; cursor: ew-resize; z-index: 2; }
+/* 兩條線之外壓暗：一眼確認「這段就是我說的物件寬度」 */
+.cal-ov .cal-shade { position: absolute; top: 0; bottom: 0; background: rgba(4, 8, 12, .55); pointer-events: none; }
+.cal-ov .cal-line {
+  position: absolute; top: 0; bottom: 0; width: 0;
+  border-left: 2px solid var(--accent); pointer-events: none;
+  box-shadow: 0 0 0 1px rgba(0, 0, 0, .55);
+}
+.cal-ov .cal-line b {
+  position: absolute; top: 6px; transform: translateX(-50%);
+  background: var(--accent); color: #04211d; font: 700 10px/1 inherit;
+  padding: 3px 5px; border-radius: 4px;
+}
+.cal-ov .cal-line[data-side="r"] b { top: 26px; }
+/* 驗證模式（cover）看得到的範圍邊界 —— 虛線外的畫面疊圖時會被裁掉 */
+.cal-ov .cal-crop {
+  position: absolute; top: 0; bottom: 0; width: 0;
+  border-left: 1.5px dashed var(--warnc); opacity: .8; pointer-events: none;
+}
+.cal-ov .cal-chip {
+  position: absolute; left: 50%; bottom: 8px; transform: translateX(-50%);
+  background: rgba(6, 10, 14, .82); color: #fff; padding: 4px 10px; border-radius: 6px;
+  font-size: 11.5px; white-space: nowrap; pointer-events: none; font-variant-numeric: tabular-nums;
+}
+.cal-ov .cal-chip b { color: var(--accent); }
+
+.calhud { margin-top: 4px; }
+.calchip {
+  display: inline-block; padding: 3px 8px; border-radius: 6px; font-size: 11px;
+  background: rgba(6, 10, 14, .72); border: 1px solid var(--line); color: var(--dim);
+}
+.calchip.good { color: #8ceeb4; border-color: rgba(53, 214, 122, .45); }
+.calchip.warn { color: #ffd88a; border-color: rgba(240, 180, 41, .45); }
+.calchip.bad { color: #ffa79f; border-color: rgba(255, 107, 94, .5); }
+
+.cal-sec .cal-step { margin: 10px 0 5px; font-size: 11.5px; color: var(--fg); font-weight: 600; }
+.cal-sec .cal-presets button { min-width: 0; flex: 1 1 auto; font-size: 11px; padding: 6px 4px; }
+.cal-sec .row em { flex: 0 0 auto; font-style: normal; color: var(--dim); font-size: 11px; }
+.cal-sec input[type="number"] {
+  background: rgba(255, 255, 255, .06); color: var(--fg);
+  border: 1px solid var(--line); border-radius: 6px; padding: 6px 7px;
+  font: inherit; font-size: 12px; flex: 1 1 auto; min-width: 0;
+}
+.cal-nudge { display: flex; gap: 6px; margin-top: 7px; }
+.cal-nudge > div { flex: 1 1 0; display: flex; gap: 3px; align-items: center; }
+.cal-nudge span { font-size: 10.5px; color: var(--dim); flex: 0 0 auto; }
+.cal-nudge button {
+  flex: 1 1 0; min-width: 0; padding: 6px 0; border: 1px solid var(--line); border-radius: 5px;
+  background: rgba(255, 255, 255, .05); color: var(--fg); font: 600 11px/1 inherit; cursor: pointer;
+}
+.cal-src { font-size: 11px; color: var(--dim); margin-top: 7px; }
+.cal-src b { color: var(--fg); font-variant-numeric: tabular-nums; }
+
+.cal-verdict { margin-top: 8px; padding: 7px 9px; border-radius: 7px; font-size: 11.5px; line-height: 1.45; }
+.cal-verdict.ok { background: rgba(53, 214, 122, .13); color: #a9f0c6; }
+.cal-verdict.warn { background: rgba(240, 180, 41, .14); color: #ffdf9f; }
+.cal-verdict.bad, .cal-verdict.invalid { background: rgba(255, 107, 94, .15); color: #ffb8b1; }
+.cal-verdict div { margin-top: 3px; opacity: .9; }
+
+.cal-big {
+  margin: 8px 0 4px; font-size: 24px; font-weight: 700; color: var(--fg);
+  font-variant-numeric: tabular-nums; letter-spacing: -.01em;
+}
+.cal-big small { font-size: 13px; font-weight: 600; color: var(--dim); }
+/* 不確定度跟主數字擺在一起 —— 讓「±」跟數字一樣顯眼，不要製造精確的假象 */
+.cal-big .pm { font-size: 12px; font-weight: 600; color: var(--warnc); }
+.cal-big .sep { color: var(--dim); font-weight: 400; margin: 0 2px; }
+
+.cal-tbl { width: 100%; border-collapse: collapse; margin: 6px 0; font-size: 11px; }
+.cal-tbl td { padding: 3px 0; vertical-align: top; border-top: 1px solid rgba(255, 255, 255, .06); }
+.cal-tbl td:first-child { color: var(--dim); width: 38%; }
+.cal-tbl td:nth-child(2) { font-variant-numeric: tabular-nums; }
+.cal-tbl td:last-child { text-align: right; }
+.cal-tbl tr.tot td { border-top: 1px solid var(--line); font-weight: 700; color: var(--fg); }
+
+.cal-impact { margin-top: 8px; font-size: 11.5px; line-height: 1.5; color: var(--fg); }
+.cal-impact ol { margin: 6px 0 0; padding-left: 18px; }
+.cal-impact li { margin-bottom: 5px; color: var(--dim); }
+.cal-impact li b { color: var(--fg); }
+.cal-notes { margin: 8px 0 0; padding-left: 16px; font-size: 11px; line-height: 1.45; }
+.cal-notes li { margin-bottom: 4px; }
+.cal-notes li.warn { color: var(--warnc); }
+.cal-notes li.bad { color: var(--bad); }
+
 .toast {
   position: fixed; left: 50%; bottom: 14px; transform: translateX(-50%);
   background: rgba(0,0,0,.88); color: #fff; padding: 8px 14px; border-radius: 8px;

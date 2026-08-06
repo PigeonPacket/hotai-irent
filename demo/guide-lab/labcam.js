@@ -77,6 +77,7 @@ export function createLabCamera(video, mockCanvas, onMode = () => {}) {
   let stream = null;
   let mode = "idle";
   let stopped = false;
+  let settings = null;   // track.getSettings()：鏡頭校正要拿它跟 video.videoWidth 對帳
 
   function apply(next, info) {
     mode = next;
@@ -112,6 +113,7 @@ export function createLabCamera(video, mockCanvas, onMode = () => {}) {
       video.srcObject = stream;
       await video.play();
       const s = stream.getVideoTracks()[0]?.getSettings?.() || {};
+      settings = s;
       apply("live", { settings: s });
       return { mode: "live", settings: s };
     } catch (err) {
@@ -126,8 +128,9 @@ export function createLabCamera(video, mockCanvas, onMode = () => {}) {
     if (stream) { stream.getTracks().forEach((t) => t.stop()); stream = null; }
     try { video.pause(); } catch { /* ignore */ }
     video.srcObject = null;
+    settings = null;
     mode = "idle";
   }
 
-  return { start, stop, get mode() { return mode; } };
+  return { start, stop, get mode() { return mode; }, get settings() { return settings; } };
 }
