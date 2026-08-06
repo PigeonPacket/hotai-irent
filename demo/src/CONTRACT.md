@@ -18,7 +18,9 @@
 |------|-------|--------|
 | `index.html`, `app.js`, `styles.css` | Wave 1（凍結） | **唯讀。連 `app.js` 都不用改**（見 §2） |
 | `src/config.js`, `src/state.js`, `src/router.js`, `src/util.js`, `src/camera.js` | Wave 1（凍結） | 唯讀 |
-| `src/quality.js`, `src/guides.js` | Wave 3 / Track G | 唯讀 |
+| `src/quality.js`, `src/guides.js`, `src/guides-cuv.js` | Wave 3 / Track G | 唯讀（`guides-cuv.js` 是產生物，**任何人都不要手改**） |
+| `src/vehicle-status.js` | 共用（原 Track A） | 改動前先讀 §10.1；動到值域就是跨畫面改動 |
+| `demo/guide-lab/`, `guide-lab.html` | Track G 研究頁 | **唯讀**，可以 import 不要修改 |
 | `src/points.js` | 共用 | **只允許在 `POINT_RULES` 陣列尾端 append**，不要改既有規則 |
 | `src/screens/capture.js` | Wave 1 | 唯讀 |
 | `src/screens/vehicle.js`, `src/screens/ops.js` | **Track A** | 別人不要動 |
@@ -386,8 +388,21 @@ const { svg } = getGuide(state.session.vehicle.modelId, 'lf');  // svg = 可塞�
 ```
 
 `CORNERS`（四角 id / label / hint）是**正式契約**。
-`getGuide()` 目前回傳的 path 只是粗略七點多邊形、**不是任何真實車款的 45° 輪廓**，
-會被 Track G 用參數化透視建構的結果整批取代 —— 呼叫端不需要改。
+
+`getGuide()` 回傳的已經是 **Toyota Corolla Cross XG10 的真實車體輪廓**
+（來源 `assets/car-reference/generated/guide-cuv-*.svg`，折線烘在 `src/guides-cuv.js`）。
+簽名與回傳形狀沒有變，呼叫端一行都不用改；`lineCount` / `camera` 是新增欄位。
+
+| | |
+|---|---|
+| 座標系 | 來源 SVG 是 `500×375`，`guides.js` 換算成 `capture.js` 的 `360×270`（× **0.72**，兩軸相同）再減掉 `GUIDE_ORIGIN`。**改 `capture.js` 的 `GUIDE_VB` / `GUIDE_ORIGIN` 就要同步改 `guides.js` 的 `TARGET_FRAME`**（那裡有等比斷言，改壞會直接 throw）。 |
+| 密度 | `GUIDE_DENSITY`（`guides.js` 檔頭）：`all` 130 條 / **`medium` 36 條（預設）** / `minimal` 13 條。也可以單次覆寫：`getGuide(modelId, 'lf', 'minimal')`。 |
+| 地面線 | 接地十字 + 地面線共 5 條，**任何密度都全開**（對相機高度最敏感）。 |
+| 相機基準 | `GUIDE_CAMERA` = 3.85 m / 1.5 m / 偏擺 45° / 等效 26 mm / 4:3 橫向。這是**紀錄值不是輸入值**，改它不會重算輪廓。與 `quality.js` 的 `STANDING_GUIDE` 必須一致。 |
+| 授權 | 衍生自 CC BY 4.0 模型，**標示是強制的**，見 `guides.js` 檔頭與 `assets/car-reference/ATTRIBUTION.md` §2。 |
+
+> ⚠️ 密度與相機參數都是**暫定值**，等使用者站到實車前確認（G5）。
+> 兩者都是 `guides.js` 檔頭的單一常數，改一個值就生效。
 
 ---
 
@@ -408,7 +423,55 @@ cd demo && python3 -m http.server 8080
 
 ## 10. 已知技術債
 
-### 10.1 `VEHICLE_STATUS` / `setVehicleStatus` 有兩份同名但不相容的定義 🟠
+### 10.1 ~~`VEHICLE_STATUS` / `setVehicleStatus` 有兩份同名但不相容的定義~~ ✅ 已收斂
+
+**2026-08-06 收斂完成。** 現在全專案只有一份定義、一個簽名：
+
+```
+src/vehicle-status.js      ← 純狀態機（不依賴車隊與畫面）
+  VEHICLE_STATUS           英文 id 為正規值：available / reserved / in_use /
+                           ai_review / manual_review / not_recommended / maintenance
+  STATUS_META              label / tone / bookable / risk / riderNotice / transitions
+  STATUS_MAIN_LINE, STATUS_BRANCH_LINE, UNKNOWN_STATUS_META
+  normalizeStatus(value)   容錯解析：英文 id、中文標籤、別名、物件、模糊比對
+  statusMeta(id) / statusLabel(value) / statusBadgeClass(value)
+
+src/screens/vehicle.js     ← 需要車隊的部分 + **唯一的寫入口**
+  setVehicleStatus(state, vehicleId, value, detail?)
+  FLEET / getFleet / resolveStatus / assessRisk / syncSessionVehicleStatus
+  並 re-export 上面那一組（既有 import 路徑不受影響）
+
+src/screens/inuse.js       ← 不再自己定義，只 re-export
+  export { VEHICLE_STATUS, statusBadgeClass, statusLabel, normalizeStatus }
+  export { setVehicleStatus }              // ← 與 vehicle.js 是同一個函式實體
+  currentVehicleStatus(state)              // 本檔自有：回顯示用中文標籤
+```
+
+**規則**：正規值（比較、分支、`STATUS_META` 的鍵）一律用**英文 id**；
+`flags.vehicleStatus` 與畫面顯示一律用**中文標籤**（`statusLabel()` 轉）。
+儲存格式刻意維持中文標籤 —— 舊 session 的 localStorage 存的就是中文，
+換成 id 會讓已存檔的 session 讀不回來。`normalizeStatus()` 兩種都認得。
+
+**呼叫端改動**：`inuse.js` 與 `supplement.js` 的兩個寫入點補上 `state.session.vehicle.id`；
+`inuse.js` 內部 `VEHICLE_STATUS.MANUAL` → `MANUAL_REVIEW`；顯示狀態一律過 `statusLabel()`。
+`ops.js` **一行都沒改**（它 import 的是 `vehicle.js`，re-export 補上了）。
+
+**併入的行為**：`setVehicleStatus()` 現在寫本車時也會鏡射 `session.vehicle.status`
+（原本只有 `inuse.js` 那份會做）。清除（`value == null`）時不動它，由 `resolveStatus()` 推導。
+
+**唯一的行為差異**：`statusBadgeClass()` 對**認不出來**的狀態值從 `"badge"` 變成
+`"badge warn"`（改用 `STATUS_META[].tone`，與 `statusPill()` 同一份來源）。
+正常劇本不會出現無法辨識的狀態值。
+
+**驗收結果**（C3 鏈 + 舊 session 相容，逐項通過）：
+`#/inuse` 回報車損 → `flags.vehicleStatus = "不建議出租"` →
+`#/ops` `bookable=false` / `riderNotice`「已確認車況問題，不建議預約，請改選其他車輛。」/ 風險 `danger` →
+`#/vehicle` statusPill + riskPill 皆 danger → `維修中 → 可租` 與 `結案 → 可租` 都回得到起點 →
+清除覆寫回到自動推導。舊 session 的七個中文標籤全部解析正確，
+存檔 → 重新 `load()` → 仍是 `manual_review`。
+
+<details>
+<summary>收斂前的原始記載（保留）</summary>
 
 Wave 2 的 Track A 與 Track B 各自實作了車輛狀態機的寫入口，**兩支檔案匯出同名符號，
 但值域與函式簽名都不同**：
@@ -443,3 +506,46 @@ Wave 2 的 Track A 與 Track B 各自實作了車輛狀態機的寫入口，**�
 3. `inuse.js` / `vehicle.js` 改成 re-export 共用模組，避免既有 import 路徑一次全斷。
 4. 驗收：`?nav=1` 走完整劇本，`#/ops` 的狀態與 timeline 的 `EVENTS.VEHICLE_STATUS`
    事件序列與收斂前一致。
+
+</details>
+
+---
+
+### 10.2 模擬相機素材的取景比輪廓的相機基準窄 15% 🟠
+
+**只影響桌機／模擬相機，不影響真機。**
+
+`assets/car-{lf,rf,lr,rr}.jpg` 是從 `assets/car-reference/render-*-glb-ccby.png`
+裁 `x120..1479`（= 畫面寬的 85%）之後縮進 `1200×1600` 的 3:4 畫布做的。
+`capture.js` 的模擬畫布是 `1440×1080`（4:3），cover 之後看得到的正好也是原渲圖的
+**85%（水平垂直都是）** —— 等於把模擬相機從等效 26 mm 變成 **30.6 mm（×1.176）**。
+
+輪廓是照 26 mm 全畫框算的，所以在模擬相機上車體會比輪廓大 17.6%，
+`quality.js` 的輪廓占比永遠不及格，取景檢查一直誤報「往後退約 5 步」。
+
+**已量到的數字**（`analyzeLuma()` 對真素材實測，門檻 `minCoverage` 0.62 / `alignCoverage` 0.66）：
+
+| | coverage | spreadRatio | aligned | 誤報 |
+|---|---|---|---|---|
+| 現況素材 | 0.553 – 0.594 | 1.28 – 1.36 | false ×4 | 4/4 |
+| 同一輪廓、素材取景與輪廓一致時 | 0.674 – 0.726 | 1.09 – 1.15 | true ×4 | 0/4 |
+
+→ **輪廓與 viewBox 換算是對的**（把輪廓疊回 `render-*-glb-ccby.png` 逐點吻合），
+問題出在素材。
+
+**修法（已驗證，尚未套用）**：把同一批像素重新擺位，讓「橫向 4:3 cover 之後看得到的那一塊」
+正好等於整張渲圖畫面 —— 渲圖 `1600×1200` → `1200×900` → 貼在 `y=350` 的 `1200×1600` 畫布。
+被裁掉的 15% 邊界原本就是純背景（實測車體 bbox `x[161,1437]` 落在裁切範圍 `[120,1480]` 內），
+所以**沒有任何車體細節損失**，邊界用 clamp 取樣自動接回該列的背景、不會有接縫。
+曝光與局部對比沿用原檔，不重做。
+
+套用後實測（`analyzeLuma`，橫向 1440×1080）：coverage 0.718 – 0.759、aligned ×4、
+誤報 0/4，且 `quality.ok` 仍全部為 true（avg 136–150、bright 0.0%、dark ≤3.3%、
+gradient 11.4–12.4、sharpness 0.083–0.147）。
+
+> gradient 從 13.6 掉到 11.4 是**正確取景的必然結果**（車體變小 → 每格取樣裡的邊緣變少），
+> 不是重取樣造成的模糊（雙線性與 Catmull-Rom 差 0.02）。**不要**為了把數字補回去加銳化 ——
+> 那就變成為了過門檻而修素材。
+
+**沒有直接套用的理由**：這會覆寫 D 組已對 `quality.js` 調校並逐項驗證過的素材
+（見 commit `3f12e9b`），不在 D3 的授權範圍內，交由素材的 owner 決定。

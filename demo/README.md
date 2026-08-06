@@ -267,7 +267,9 @@ src/
   router.js     hash 路由 + 畫面生命週期 + 跳頁列
   camera.js     相機 / 模擬相機（永不 throw，失敗自動降級）
   quality.js    亮度・過曝・梯度模糊・輪廓占比啟發式 + STANDING_GUIDE
-  guides.js     四角定義（正式契約）+ 虛線輪廓（⚠ 仍是暫時版本，見下方）
+  guides.js     四角定義（正式契約）+ 真實車體輪廓（密度／相機常數在檔頭）
+  guides-cuv.js Corolla Cross 四角折線資料（自動產生，勿手改）
+  vehicle-status.js  車輛營運狀態機（VEHICLE_STATUS / STATUS_META / normalizeStatus）
   points.js     積分規則（對齊 PIG-13 §5）
   screens/      一個檔案一個畫面（八支）
   CONTRACT.md   ← 要加畫面 / 改共用模組的人先讀這個（含「已知技術債」）
@@ -284,10 +286,15 @@ assets/         模擬素材（car-<角度>.jpg 會自動被模擬相機採用�
 
 ## 誠實邊界（簡報前請先看過）
 
-- 🟡 **主 App 的虛線輪廓還是暫時版本。** `src/guides.js` 用的是隨手畫的粗略七點多邊形，
-  **不是任何真實車款的 45° 輪廓**。用 Corolla Cross 3D 模型生成的真實輪廓目前只存在於
-  `assets/car-reference/generated/guide-cuv-*.svg`，由 `guide-lab.html` 載入。
-  兩者尚未接起來。
+- 🟡 **虛線輪廓已是真實 Corolla Cross 幾何，但密度與站位仍是暫定值。**
+  `src/guides.js` 現在用的是 `assets/car-reference/generated/guide-cuv-*.svg`
+  的實際車體折線（烘在 `src/guides-cuv.js`）。密度預設「中等」（36 條細節線 + 5 條地面線）、
+  相機基準 3.85 m / 1.5 m / 偏擺 45° / 等效 26 mm，**兩者都要等 G5 站到實車前確認**，
+  常數放在 `guides.js` 檔頭（`GUIDE_DENSITY` / `GUIDE_CAMERA`）。
+- 🟠 **桌機模擬相機的取景與輪廓差 17.6%。** `assets/car-*.jpg` 是渲圖裁掉 15% 邊界做的，
+  等效焦距因此是 30.6 mm 而不是輪廓假設的 26 mm，於是輪廓看起來比車小一圈、
+  取景檢查會誤報「往後退約 5 步」。**真機不受影響**（真相機就是 26 mm 等效）。
+  詳見 `src/CONTRACT.md` §10.2。
 - 🟡 **輪廓對真實車輛的保真度尚未獨立驗證。** 目前的比較基準是**同一顆 3D 模型的渲圖**，
   屬於**自我一致性檢查**。要真的驗，得到 iRent 停車格用目標站位實拍四張校正照
   —— `guide-lab.html` 就是為此準備的。

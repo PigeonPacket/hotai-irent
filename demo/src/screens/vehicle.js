@@ -6,40 +6,41 @@
  * 目的（實測報告 §3.2 / notes 第 2 點的「防禦性」那一軌）：
  *   在拍照之前先講清楚「認真拍照是為了證明損傷本來就有，不是你造成的」。
  *
- * 本檔案同時是 **Track A 的車隊資料與車輛狀態機單一真相**：
+ * 本檔案同時是 **車隊資料與車輛狀態寫入的單一真相**：
  *   - `FLEET`               模擬車隊（含本次 demo 車輛）
- *   - `VEHICLE_STATUS`      狀態機的合法狀態值（= `flags.vehicleStatus` 的契約）
  *   - `getFleet(state)`     把靜態車隊 + session 即時資料合成「現在的車隊真相」
- *   - `setVehicleStatus()`  唯一的狀態寫入口
+ *   - `resolveStatus()`     某一台車「現在」的狀態（flag → override → 推導 → 車隊值）
+ *   - `setVehicleStatus()`  **唯一**的狀態寫入口（`inuse.js` 也 re-export 這一個）
  *   `ops.js` 直接 import 這些 export，兩個畫面因此永遠讀同一份真相。
  *
+ * 狀態機本身（`VEHICLE_STATUS` / `STATUS_META` / `normalizeStatus()` …）已抽到
+ * **`../vehicle-status.js`**，因為 `inuse.js` 以前有一份同名不同義的定義
+ * （CONTRACT.md §10.1）。本檔 re-export 那些符號，既有 import 路徑不受影響。
+ *
  * ──────────────────────────────────────────────────────────────────────────
- * `flags.vehicleStatus` 契約（Track A 擁有，Track B 的 inuse.js 會寫入）
+ * `flags.vehicleStatus` 寫入
  * ──────────────────────────────────────────────────────────────────────────
- * 寫入方式（建議）：
- *     import { setVehicleStatus, VEHICLE_STATUS } from './vehicle.js';
+ *     import { setVehicleStatus } from './vehicle.js';
+ *     import { VEHICLE_STATUS } from '../vehicle-status.js';
  *     setVehicleStatus(state, state.session.vehicle.id,
  *                      VEHICLE_STATUS.MANUAL_REVIEW, { reason: '使用者回報車損' });
- * 或最低限度（Track B 只要這樣做就會生效）：
- *     state.setFlag('vehicleStatus', 'manual_review');
  *
- * 接受的值：
- *   1. `VEHICLE_STATUS` 的七個 id：available / reserved / in_use / ai_review /
- *      manual_review / not_recommended / maintenance
- *   2. 中文標籤：可租 / 待取車 / 租賃中 / AI審核中 / 待人工 / 不建議出租 / 維修中
- *   3. 常見別名（見 STATUS_ALIASES）：reported / flagged / damaged / repair / …
- *   4. 物件形式：`{ status, reason?, at? }`（status 走上面同一套解析）
- *   5. `null` / `undefined` = 未設定 → 由 session 推導（deriveStatus）
- *   6. 以上都不符 → 退化成 `unknown`：以「待確認」呈現、原值照實顯示、**不拋錯**。
+ * 值域、別名、容錯與儲存格式（存中文標籤、比較用英文 id）見 `vehicle-status.js` 檔頭。
  *
  * 另外：**只要 `session.reports` 有任何回報，即使狀態值沒被寫入，下一位使用者
- * 也一定會在這一頁看到風險標籤**（見 assessRisk）。這樣即使 Track B 只呼叫了
+ * 也一定會在這一頁看到風險標籤**（見 assessRisk）。這樣即使呼叫端只呼叫了
  * `state.addReport()` 而忘了設 flag，「回報 → 下一位看得到」的劇本仍然成立。
  * ==========================================================================
  */
 
 import { EVENTS } from "../state.js";
 import { escapeHtml, formatTime } from "../util.js";
+import {
+  UNKNOWN_STATUS_META,
+  VEHICLE_STATUS,
+  normalizeStatus,
+  statusMeta,
+} from "../vehicle-status.js";
 
 export const id = "vehicle";
 export const title = "取車前車況預告";
@@ -49,246 +50,27 @@ export const subtitle = "AI 綜合上一輪還車紀錄（模擬資料）";
 export const nav = [{ label: "取車前預告", params: {}, order: 10 }];
 
 // ==========================================================================
-// 狀態機（PIG-13 §4）
+// 狀態機（PIG-13 §4）—— 定義已抽到 ../vehicle-status.js
 // ==========================================================================
+//
+// 為什麼搬走：`screens/inuse.js` 原本自己也匯出一份同名的 `VEHICLE_STATUS` /
+// `setVehicleStatus`，值域與簽名都不同（CONTRACT.md §10.1）。同名不同義 =
+// import 錯一支不會有任何錯誤訊息，只會靜默走錯分支。收斂成一份之後，
+// 整個程式裡只剩 `../vehicle-status.js` 這一個定義。
+//
+// 下面的 re-export 是**相容層**：`ops.js` 等既有 import 路徑一行都不用改。
 
-/** `flags.vehicleStatus` 的正式值。 */
-export const VEHICLE_STATUS = Object.freeze({
-  AVAILABLE: "available",
-  RESERVED: "reserved",
-  IN_USE: "in_use",
-  AI_REVIEW: "ai_review",
-  MANUAL_REVIEW: "manual_review",
-  NOT_RECOMMENDED: "not_recommended",
-  MAINTENANCE: "maintenance",
-});
-
-/**
- * 每個狀態的顯示與語意。
- * - `tone`        badge / pill 色調：ok | warn | danger | ""（中性）
- * - `bookable`    預約清單是否可下訂
- * - `risk`        風險等級：ok | warn | danger
- * - `riskLabel`   風險標籤文字（null = 不顯示標籤）
- * - `riderNotice` **下一位使用者在預約清單會看到的那一句話**
- * - `opsHint`     營運端說明
- * - `transitions` 合法轉移（完全依 PIG-13 §4 的狀態圖）
- */
-export const STATUS_META = Object.freeze({
-  [VEHICLE_STATUS.AVAILABLE]: {
-    id: VEHICLE_STATUS.AVAILABLE,
-    label: "可租",
-    tone: "ok",
-    bookable: true,
-    risk: "ok",
-    riskLabel: null,
-    riderNotice: "車況正常，可立即預約。",
-    opsHint: "正常曝光於預約清單。",
-    transitions: [{ to: VEHICLE_STATUS.RESERVED, action: "預約" }],
-  },
-  [VEHICLE_STATUS.RESERVED]: {
-    id: VEHICLE_STATUS.RESERVED,
-    label: "待取車",
-    tone: "",
-    bookable: false,
-    risk: "ok",
-    riskLabel: null,
-    riderNotice: "已被預約，不再顯示於可租清單。",
-    opsHint: "等待使用者到場解鎖。",
-    transitions: [
-      { to: VEHICLE_STATUS.IN_USE, action: "解鎖" },
-      { to: VEHICLE_STATUS.AVAILABLE, action: "取消預約" },
-    ],
-  },
-  [VEHICLE_STATUS.IN_USE]: {
-    id: VEHICLE_STATUS.IN_USE,
-    label: "租賃中",
-    tone: "",
-    bookable: false,
-    risk: "ok",
-    riskLabel: null,
-    riderNotice: "目前租賃中，歸還後開放預約。",
-    opsHint: "使用中；此時的使用者回報會即時改變本車狀態。",
-    transitions: [{ to: VEHICLE_STATUS.AI_REVIEW, action: "還車拍照完成" }],
-  },
-  [VEHICLE_STATUS.AI_REVIEW]: {
-    id: VEHICLE_STATUS.AI_REVIEW,
-    label: "AI審核中",
-    tone: "warn",
-    bookable: false,
-    risk: "warn",
-    riskLabel: "待確認",
-    riderNotice: "剛歸還，AI 正在比對前後車況，稍後開放預約。",
-    opsHint: "還車照片已進 AI 比對，等待判定。",
-    transitions: [
-      { to: VEHICLE_STATUS.AVAILABLE, action: "無問題" },
-      { to: VEHICLE_STATUS.MANUAL_REVIEW, action: "有爭議" },
-      { to: VEHICLE_STATUS.NOT_RECOMMENDED, action: "明顯損傷／髒污" },
-    ],
-  },
-  [VEHICLE_STATUS.MANUAL_REVIEW]: {
-    id: VEHICLE_STATUS.MANUAL_REVIEW,
-    label: "待人工",
-    tone: "warn",
-    bookable: false,
-    risk: "warn",
-    riskLabel: "待確認",
-    riderNotice: "車況有待確認事項，營運端處理中，暫不開放預約。",
-    opsHint: "需人工判定；預約清單已顯示風險並暫停下訂。",
-    transitions: [
-      { to: VEHICLE_STATUS.AVAILABLE, action: "結案" },
-      { to: VEHICLE_STATUS.NOT_RECOMMENDED, action: "確認問題" },
-    ],
-  },
-  [VEHICLE_STATUS.NOT_RECOMMENDED]: {
-    id: VEHICLE_STATUS.NOT_RECOMMENDED,
-    label: "不建議出租",
-    tone: "danger",
-    bookable: false,
-    risk: "danger",
-    riskLabel: "不建議預約",
-    riderNotice: "已確認車況問題，不建議預約，請改選其他車輛。",
-    opsHint: "已從可租清單下架，等待派工。",
-    transitions: [{ to: VEHICLE_STATUS.MAINTENANCE, action: "派工" }],
-  },
-  [VEHICLE_STATUS.MAINTENANCE]: {
-    id: VEHICLE_STATUS.MAINTENANCE,
-    label: "維修中",
-    tone: "danger",
-    bookable: false,
-    risk: "danger",
-    riskLabel: "維修中",
-    riderNotice: "維修中，不開放預約。",
-    opsHint: "維修廠處理中，修復完成後回到可租。",
-    transitions: [{ to: VEHICLE_STATUS.AVAILABLE, action: "修復完成" }],
-  },
-});
-
-/** 狀態機的主線順序（ops.js 畫狀態流程用）。 */
-export const STATUS_MAIN_LINE = Object.freeze([
-  VEHICLE_STATUS.AVAILABLE,
-  VEHICLE_STATUS.RESERVED,
-  VEHICLE_STATUS.IN_USE,
-  VEHICLE_STATUS.AI_REVIEW,
-]);
-
-/** AI 審核後的分支。 */
-export const STATUS_BRANCH_LINE = Object.freeze([
-  VEHICLE_STATUS.MANUAL_REVIEW,
-  VEHICLE_STATUS.NOT_RECOMMENDED,
-  VEHICLE_STATUS.MAINTENANCE,
-]);
-
-/** 讀到不認得的值時用這個 —— 優雅退化，不拋錯。 */
-export const UNKNOWN_STATUS_META = Object.freeze({
-  id: "unknown",
-  label: "狀態待確認",
-  tone: "warn",
-  bookable: false,
-  risk: "warn",
-  riskLabel: "待確認",
-  riderNotice: "車輛狀態待確認，建議改選其他車輛或聯繫客服。",
-  opsHint: "收到無法解析的狀態值（見下方原值），已保守視為待確認。",
-  transitions: [
-    { to: VEHICLE_STATUS.AVAILABLE, action: "確認正常" },
-    { to: VEHICLE_STATUS.MANUAL_REVIEW, action: "轉人工" },
-  ],
-});
-
-/**
- * 別名 → 正式狀態。刻意寬鬆：Track B 的 inuse.js 不必知道我的常數名。
- */
-const STATUS_ALIASES = Object.freeze({
-  // available
-  available: VEHICLE_STATUS.AVAILABLE, 可租: VEHICLE_STATUS.AVAILABLE,
-  可出租: VEHICLE_STATUS.AVAILABLE, 正常: VEHICLE_STATUS.AVAILABLE,
-  ok: VEHICLE_STATUS.AVAILABLE, free: VEHICLE_STATUS.AVAILABLE,
-  idle: VEHICLE_STATUS.AVAILABLE, ready: VEHICLE_STATUS.AVAILABLE,
-  rentable: VEHICLE_STATUS.AVAILABLE, normal: VEHICLE_STATUS.AVAILABLE,
-  // reserved
-  reserved: VEHICLE_STATUS.RESERVED, booked: VEHICLE_STATUS.RESERVED,
-  booking: VEHICLE_STATUS.RESERVED, 待取車: VEHICLE_STATUS.RESERVED,
-  已預約: VEHICLE_STATUS.RESERVED, pending_pickup: VEHICLE_STATUS.RESERVED,
-  // in_use
-  in_use: VEHICLE_STATUS.IN_USE, "in-use": VEHICLE_STATUS.IN_USE,
-  inuse: VEHICLE_STATUS.IN_USE, using: VEHICLE_STATUS.IN_USE,
-  rented: VEHICLE_STATUS.IN_USE, renting: VEHICLE_STATUS.IN_USE,
-  租賃中: VEHICLE_STATUS.IN_USE, 使用中: VEHICLE_STATUS.IN_USE,
-  // ai_review
-  ai_review: VEHICLE_STATUS.AI_REVIEW, "ai-review": VEHICLE_STATUS.AI_REVIEW,
-  aireview: VEHICLE_STATUS.AI_REVIEW, ai審核中: VEHICLE_STATUS.AI_REVIEW,
-  審核中: VEHICLE_STATUS.AI_REVIEW, comparing: VEHICLE_STATUS.AI_REVIEW,
-  // manual_review
-  manual_review: VEHICLE_STATUS.MANUAL_REVIEW, manual: VEHICLE_STATUS.MANUAL_REVIEW,
-  待人工: VEHICLE_STATUS.MANUAL_REVIEW, 人工審核: VEHICLE_STATUS.MANUAL_REVIEW,
-  待審核: VEHICLE_STATUS.MANUAL_REVIEW, 待確認: VEHICLE_STATUS.MANUAL_REVIEW,
-  已回報: VEHICLE_STATUS.MANUAL_REVIEW, reported: VEHICLE_STATUS.MANUAL_REVIEW,
-  flagged: VEHICLE_STATUS.MANUAL_REVIEW, pending: VEHICLE_STATUS.MANUAL_REVIEW,
-  pending_review: VEHICLE_STATUS.MANUAL_REVIEW, needs_review: VEHICLE_STATUS.MANUAL_REVIEW,
-  review: VEHICLE_STATUS.MANUAL_REVIEW,
-  // not_recommended
-  not_recommended: VEHICLE_STATUS.NOT_RECOMMENDED,
-  "not-recommended": VEHICLE_STATUS.NOT_RECOMMENDED,
-  不建議出租: VEHICLE_STATUS.NOT_RECOMMENDED, 不建議預約: VEHICLE_STATUS.NOT_RECOMMENDED,
-  blocked: VEHICLE_STATUS.NOT_RECOMMENDED, unavailable: VEHICLE_STATUS.NOT_RECOMMENDED,
-  norent: VEHICLE_STATUS.NOT_RECOMMENDED, no_rent: VEHICLE_STATUS.NOT_RECOMMENDED,
-  damaged: VEHICLE_STATUS.NOT_RECOMMENDED, damage: VEHICLE_STATUS.NOT_RECOMMENDED,
-  unfit: VEHICLE_STATUS.NOT_RECOMMENDED,
-  // maintenance
-  maintenance: VEHICLE_STATUS.MAINTENANCE, repair: VEHICLE_STATUS.MAINTENANCE,
-  repairing: VEHICLE_STATUS.MAINTENANCE, servicing: VEHICLE_STATUS.MAINTENANCE,
-  維修中: VEHICLE_STATUS.MAINTENANCE, 保養中: VEHICLE_STATUS.MAINTENANCE,
-});
-
-/** 認不出精確別名時的模糊比對（順序有意義）。 */
-const FUZZY_RULES = Object.freeze([
-  [/維修|保養|repair|maint|servic/i, VEHICLE_STATUS.MAINTENANCE],
-  [/不建議|not[_-]?rec|block|unavail|no[_-]?rent|損|damag|dent|scratch/i, VEHICLE_STATUS.NOT_RECOMMENDED],
-  [/人工|manual|回報|report|flag|待確認|pending|review|dirty|髒/i, VEHICLE_STATUS.MANUAL_REVIEW],
-  [/審核|verif|compar/i, VEHICLE_STATUS.AI_REVIEW],
-  [/可租|available|free|idle|正常/i, VEHICLE_STATUS.AVAILABLE],
-  [/租賃|使用中|in[_-]?use|rent/i, VEHICLE_STATUS.IN_USE],
-  [/待取|reserv|book/i, VEHICLE_STATUS.RESERVED],
-]);
-
-/** 取得狀態 meta；未知一律回 UNKNOWN_STATUS_META（永不 undefined）。 */
-export function statusMeta(statusId) {
-  return STATUS_META[statusId] || UNKNOWN_STATUS_META;
-}
-
-/**
- * 把任何值解析成狀態。**永不拋錯。**
- * @returns {{ id: string, meta: object, recognized: boolean, raw: any, reason: string|null }}
- */
-export function normalizeStatus(value) {
-  const empty = { id: null, meta: null, recognized: false, raw: value, reason: null };
-  if (value == null || value === "") return empty;
-
-  // 物件形式 { status, reason?, at? }
-  if (typeof value === "object") {
-    const inner = value.status ?? value.id ?? value.state ?? value.value ?? null;
-    const nested = normalizeStatus(inner);
-    return {
-      ...nested,
-      raw: value,
-      reason: value.reason ?? value.note ?? nested.reason ?? null,
-    };
-  }
-
-  const raw = String(value).trim();
-  if (!raw) return empty;
-
-  const key = raw.toLowerCase().replace(/\s+/g, "_");
-  const exact = STATUS_ALIASES[key] || STATUS_ALIASES[raw];
-  if (exact) return { id: exact, meta: statusMeta(exact), recognized: true, raw: value, reason: null };
-
-  for (const [pattern, mapped] of FUZZY_RULES) {
-    if (pattern.test(raw)) {
-      return { id: mapped, meta: statusMeta(mapped), recognized: true, raw: value, reason: null };
-    }
-  }
-  // 認不出來 → 保守退化，畫面照實顯示原值
-  return { id: "unknown", meta: UNKNOWN_STATUS_META, recognized: false, raw: value, reason: null };
-}
+export {
+  VEHICLE_STATUS,
+  STATUS_META,
+  STATUS_MAIN_LINE,
+  STATUS_BRANCH_LINE,
+  UNKNOWN_STATUS_META,
+  statusMeta,
+  statusLabel,
+  statusBadgeClass,
+  normalizeStatus,
+} from "../vehicle-status.js";
 
 // ==========================================================================
 // 車隊（模擬資料）
@@ -700,19 +482,23 @@ export function getFleet(state) {
 }
 
 /**
- * 寫入車輛狀態（唯一入口）。
- * 本車寫 `flags.vehicleStatus`；其他車寫 `flags.fleetStatusOverrides[id]`。
+ * 寫入車輛狀態 —— **全專案唯一的寫入口**（`inuse.js` re-export 的是同一個函式）。
+ * 本車寫 `flags.vehicleStatus` 並鏡射 `session.vehicle.status`；
+ * 其他車寫 `flags.fleetStatusOverrides[id]`。
  * @param {object} state ctx.state
- * @param {string} vehicleId
- * @param {string|null} value 狀態值（可用別名）；null = 清除，回到推導值
+ * @param {string} vehicleId 本車就傳 `state.session.vehicle.id`
+ * @param {string|null} value 狀態值（id / 中文標籤 / 別名 / 物件皆可）；null = 清除，回到推導值
+ * @param {object} [detail] 併進 timeline 事件的額外欄位（reason / source / …）
+ * @returns {{id, meta, recognized, raw, reason}} normalizeStatus() 的解析結果
  */
 export function setVehicleStatus(state, vehicleId, value, detail = {}) {
   const parsed = normalizeStatus(value);
   const isSelf = vehicleId === state.session.vehicle?.id;
   /**
    * 寫回去時一律存**中文標籤**（可租 / 待人工 / 不建議出租 …）。
-   * 理由：Track B 的 inuse.js 也讀 `flags.vehicleStatus`，而它的常數就是中文字面值。
-   * 中文標籤兩邊都看得懂（我這邊 normalizeStatus 照樣解析得出來），互通性最好。
+   * 理由：舊 session 的 localStorage 存的就是中文標籤，換成英文 id 會讓已存檔的
+   * session 讀不回來。`normalizeStatus()` 兩種都認得，所以正規值（比較、分支）
+   * 用英文 id，儲存與顯示用中文標籤。
    * 認不出來的值原樣保留，讓畫面可以照實顯示原值。
    */
   const stored =
@@ -720,6 +506,14 @@ export function setVehicleStatus(state, vehicleId, value, detail = {}) {
 
   if (isSelf) {
     state.setFlag("vehicleStatus", value == null ? null : stored);
+    // 鏡射到 session.vehicle.status —— 這是從 inuse.js 那一份寫入口併過來的行為，
+    // 讓直接讀車輛物件（而不是讀 flag）的畫面也拿得到同一個值。
+    // 清除（value == null）時不動它：正確的值要由 resolveStatus() 重新推導，
+    // 下次進 #/vehicle 時 syncSessionVehicleStatus() 會補上。
+    const v = state.session.vehicle;
+    if (stored != null && v && v.status !== stored) {
+      state.patch({ vehicle: { ...v, status: stored } });
+    }
   } else {
     const next = { ...getOverrides(state) };
     if (value == null) delete next[vehicleId];

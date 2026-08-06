@@ -20,7 +20,8 @@ import { createCamera } from "../camera.js";
 import { CAPTURE_CATEGORIES, EVENTS } from "../state.js";
 import { demoMinutesToMs, msToDemoMinutes, formatDemoCountdown } from "../config.js";
 import { escapeHtml, formatTime } from "../util.js";
-import { VEHICLE_STATUS, setVehicleStatus } from "./inuse.js";
+import { VEHICLE_STATUS } from "../vehicle-status.js";
+import { setVehicleStatus } from "./vehicle.js";
 
 export const id = "supplement";
 export const title = "補拍窗口";
@@ -356,7 +357,7 @@ export function mount(root, ctx) {
       unlockedAt: new Date(unlockedAt).toISOString(),
     });
     // §4 狀態機：待取車 --解鎖--> 租賃中
-    setVehicleStatus(state, VEHICLE_STATUS.IN_USE, {
+    setVehicleStatus(state, state.session.vehicle?.id, VEHICLE_STATUS.IN_USE, {
       reason: "使用者解鎖取車",
       source: "supplement:unlock",
     });

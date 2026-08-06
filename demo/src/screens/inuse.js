@@ -10,15 +10,26 @@
  * ⚠️ 所有 AI 初判結果都是**寫死的模擬資料**，畫面上有標示，不連任何後端。
  *
  * Owner: Wave 2 · Track B
- *   本檔也是 flags.vehicleStatus 的**寫入端**（狀態值定義見下方 VEHICLE_STATUS）。
- *   Track A 的 vehicle.js / ops.js 是讀取端；建檔時若已有自己的常數，
- *   請以 PIG-13 §4 的中文字面值為準（與 state.js 的 MOCK_VEHICLE.status = "待取車" 一致）。
+ *   本檔是 flags.vehicleStatus 的**寫入端之一**（讀取端是 vehicle.js / ops.js）。
+ *
+ * ⚠️ 狀態機不再定義在這裡（CONTRACT.md §10.1 的技術債已收斂）：
+ *   `VEHICLE_STATUS` 等常數來自 `../vehicle-status.js`，
+ *   `setVehicleStatus()` 來自 `./vehicle.js` —— 全專案只有一份定義、一個簽名
+ *   `setVehicleStatus(state, vehicleId, value, detail?)`。
+ *   本檔仍 re-export 這幾個名字，`supplement.js` 等既有 import 路徑不受影響。
  */
 
 import { createCamera } from "../camera.js";
 import { CAPTURE_CATEGORIES, EVENTS } from "../state.js";
 import { msToDemoMinutes, formatDemoCountdown } from "../config.js";
 import { escapeHtml, formatTime } from "../util.js";
+import {
+  VEHICLE_STATUS,
+  statusBadgeClass,
+  statusLabel,
+  statusMeta,
+} from "../vehicle-status.js";
+import { setVehicleStatus } from "./vehicle.js";
 
 export const id = "inuse";
 export const title = "使用中";
@@ -27,61 +38,29 @@ export const subtitle = "行程進行中 · 可隨時回報車況異常";
 export const nav = [{ label: "使用中回報", params: {}, order: 40 }];
 
 /**
- * 營運狀態機的狀態值（PIG-13 §4，中文字面值即為 flags.vehicleStatus 的值）。
- * ⚠️ 這是跨 track 的共用契約：Track A 的 vehicle.js / ops.js 讀 flags.vehicleStatus。
+ * 相容層 —— 這些符號的**定義**在 `../vehicle-status.js` / `./vehicle.js`。
+ * 這裡只是 re-export，讓 `import { VEHICLE_STATUS, setVehicleStatus } from './inuse.js'`
+ * 這種既有寫法拿到的仍然是同一個實體（不是第二份定義）。
+ *
+ * `setVehicleStatus` 的簽名是涵蓋性較廣的那一個：
+ *     setVehicleStatus(state, vehicleId, value, detail?)
+ * 本車就傳 `state.session.vehicle.id`（見下方 setSelfStatus()）。
  */
-export const VEHICLE_STATUS = Object.freeze({
-  AVAILABLE: "可租",
-  RESERVED: "待取車",
-  IN_USE: "租賃中",
-  AI_REVIEW: "AI審核中",
-  MANUAL: "待人工",
-  NOT_RECOMMENDED: "不建議出租",
-  MAINTENANCE: "維修中",
-});
-
-/** 狀態 → 共用 kit 的 badge 樣式。 */
-export function statusBadgeClass(status) {
-  switch (status) {
-    case VEHICLE_STATUS.AVAILABLE:
-    case VEHICLE_STATUS.IN_USE:
-      return "badge ok";
-    case VEHICLE_STATUS.AI_REVIEW:
-    case VEHICLE_STATUS.MANUAL:
-      return "badge warn";
-    case VEHICLE_STATUS.NOT_RECOMMENDED:
-    case VEHICLE_STATUS.MAINTENANCE:
-      return "badge danger";
-    default:
-      return "badge";
-  }
-}
-
-export function currentVehicleStatus(state) {
-  return (
-    state.getFlag("vehicleStatus") || state.session.vehicle?.status || VEHICLE_STATUS.AVAILABLE
-  );
-}
+export { VEHICLE_STATUS, statusBadgeClass, statusLabel, normalizeStatus } from "../vehicle-status.js";
+export { setVehicleStatus } from "./vehicle.js";
 
 /**
- * 寫入車輛狀態（唯一入口）。
- * - flags.vehicleStatus = 權威欄位（CONTRACT §4）
- * - session.vehicle.status 同步鏡射，讓直接讀車輛物件的畫面也一致
- * - 一律留一筆 EVENTS.VEHICLE_STATUS 到 timeline（事證包 / ops 都能追溯）
- * @returns {string} 寫入後的狀態
+ * 本車現在的狀態，**回傳顯示用中文標籤**（畫面直接印這個值）。
+ * 認不出來的值原樣回傳，維持「畫面照實顯示原值」的既有行為。
  */
-export function setVehicleStatus(state, next, detail = {}) {
-  const prev = currentVehicleStatus(state);
-  if (prev === next) return next;
-  state.setFlag("vehicleStatus", next);
-  state.patch({ vehicle: { ...state.session.vehicle, status: next } });
-  state.addEvent(EVENTS.VEHICLE_STATUS, {
-    label: `車輛狀態：${prev} → ${next}${detail.reason ? `（${detail.reason}）` : ""}`,
-    from: prev,
-    to: next,
-    ...detail,
-  });
-  return next;
+export function currentVehicleStatus(state) {
+  const raw = state.getFlag("vehicleStatus") || state.session.vehicle?.status || null;
+  return statusLabel(raw, statusMeta(VEHICLE_STATUS.AVAILABLE).label);
+}
+
+/** 寫入本車狀態的捷徑（就是唯一那個 setVehicleStatus，只是把 vehicleId 填好）。 */
+function setSelfStatus(state, value, detail = {}) {
+  return setVehicleStatus(state, state.session.vehicle?.id, value, detail);
 }
 
 /** 回報類型 + 對應的**模擬**初判結果（寫死的資料，非真實推論）。 */
@@ -118,7 +97,7 @@ const REPORT_TYPES = [
       finding: "車內清潔度低於可出租標準",
       confidence: 0.74,
       severity: "mid",
-      status: VEHICLE_STATUS.MANUAL,
+      status: VEHICLE_STATUS.MANUAL_REVIEW,
       action: "派清潔；下一位預約顯示「待確認」",
     },
   },
@@ -136,7 +115,7 @@ const REPORT_TYPES = [
       finding: "疑似設備異常，需人工確認是否影響行車",
       confidence: 0.61,
       severity: "mid",
-      status: VEHICLE_STATUS.MANUAL,
+      status: VEHICLE_STATUS.MANUAL_REVIEW,
       action: "客服致電確認 / 遠端診斷",
     },
   },
@@ -151,7 +130,7 @@ const REPORT_TYPES = [
       finding: "需人工判讀的其他狀況",
       confidence: 0.4,
       severity: "low",
-      status: VEHICLE_STATUS.MANUAL,
+      status: VEHICLE_STATUS.MANUAL_REVIEW,
       action: "轉人工客服",
     },
   },
@@ -175,7 +154,7 @@ function simulateTriage(type, { photoCount, safety }) {
   if (photoCount === 0) {
     confidence = Math.round(base.confidence * 0.55 * 100) / 100;
     severity = "low";
-    status = VEHICLE_STATUS.MANUAL;
+    status = VEHICLE_STATUS.MANUAL_REVIEW;
     action = "無影像可判讀，轉人工客服確認";
     notes.push("沒有附照片：模擬 AI 無法判讀，只能轉人工（這就是精簡拍照的價值）");
   }
@@ -383,7 +362,7 @@ export function mount(root, ctx) {
   // 使用者可能直接從跳頁列跳進來（沒走過 #/supplement）→ 至少把車標成租賃中，
   // 這樣 #/ops 的狀態轉移看起來才連貫。
   if (unlockedAt && !state.getFlag("vehicleStatus")) {
-    setVehicleStatus(state, VEHICLE_STATUS.IN_USE, {
+    setSelfStatus(state, VEHICLE_STATUS.IN_USE, {
       reason: "進入使用中畫面（demo 補寫）",
       source: "inuse:mount",
     });
@@ -801,7 +780,7 @@ export function mount(root, ctx) {
     // 即時影響車輛可租狀態 —— 實測第 4 點的核心。
     // 刻意在送出當下就寫入（不等下面的初判動畫）：使用者中途切走畫面時，
     // 營運端也必須已經知道這台車有問題。
-    setVehicleStatus(state, triage.status, {
+    setSelfStatus(state, triage.status, {
       reason: `使用者回報${type.label} · 模擬 AI 初判：${triage.finding}`,
       source: "inuse:report",
       reportId: report.id,
@@ -838,7 +817,7 @@ export function mount(root, ctx) {
       <dl class="kv">
         <dt>車輛狀態</dt>
         <dd>${escapeHtml(prevStatus)} <span class="inuse-arrow">→</span>
-          <span class="${statusBadgeClass(triage.status)}">${escapeHtml(triage.status)}</span></dd>
+          <span class="${statusBadgeClass(triage.status)}">${escapeHtml(statusLabel(triage.status))}</span></dd>
         <dt>建議處置</dt><dd>${escapeHtml(triage.action)}</dd>
         <dt>回報時間</dt><dd>${formatTime(report.at)}</dd>
         <dt>存證照片</dt><dd>${report.photoIds.length} 張</dd>
@@ -849,7 +828,7 @@ export function mount(root, ctx) {
           ? `<ul class="inuse-notes">${triage.notes.map((n) => `<li>${escapeHtml(n)}</li>`).join("")}</ul>`
           : ""
       }
-      <p class="muted">狀態已即時寫入營運端（flags.vehicleStatus = ${escapeHtml(triage.status)}）。
+      <p class="muted">狀態已即時寫入營運端（flags.vehicleStatus = ${escapeHtml(statusLabel(triage.status))}）。
         ${
           triage.status === VEHICLE_STATUS.NOT_RECOMMENDED
             ? "下一位使用者在預約列表就會看到風險標籤，不會到現場才發現。"
@@ -877,7 +856,7 @@ export function mount(root, ctx) {
           </div>
           <div class="muted">${escapeHtml(r.note)}</div>
           <div>${r.photoIds.length} 張照片 ·
-            <span class="${statusBadgeClass(r.triage?.status)}">${escapeHtml(r.triage?.status ?? "-")}</span>
+            <span class="${statusBadgeClass(r.triage?.status)}">${escapeHtml(statusLabel(r.triage?.status, "-"))}</span>
             ${r.safety ? '<span class="badge danger">影響行安</span>' : ""}
           </div>
         </div>`
