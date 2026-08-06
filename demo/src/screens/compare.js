@@ -158,10 +158,16 @@ function pickBaseline(pickup, supplement, angle) {
   return { photo: pk, from: pk ? "pickup" : null };
 }
 
+/**
+ * 使用中回報的照片借用 supplement 群組存放（inuse.js 的 `meta.stage='inuse'`），
+ * 它**不是**租前基準的一部分，所有「補拍」相關的統計與比對都要把它排除。
+ */
+const isSupplementShot = (p) => p?.meta?.stage !== "inuse";
+
 /** 蒐集四角的 基準 ↔ 還車 配對。 */
 function buildPairs(state) {
   const pickup = state.getCaptures("pickup");
-  const supplement = state.getCaptures("supplement");
+  const supplement = state.getCaptures("supplement").filter(isSupplementShot);
   const returns = state.getCaptures("return");
   return CORNERS.map((corner) => {
     const base = pickBaseline(pickup, supplement, corner.id);
@@ -215,7 +221,7 @@ function deriveVerdict(state) {
   const returnCaptures = state.getCaptures("return");
   const evidence = {
     baselineCount: state.getCaptures("pickup").length,
-    supplementCount: state.getCaptures("supplement").length,
+    supplementCount: state.getCaptures("supplement").filter(isSupplementShot).length,
     returnCount: returnCaptures.length,
     returnCornerCount: returnCaptures.filter(
       (c) => c.category === CAPTURE_CATEGORIES.CORNER

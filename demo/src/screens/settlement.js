@@ -240,6 +240,14 @@ export function mount(root, ctx) {
   const skipped = captures.length - shots.length;
   const range = stampRange(captures.map((c) => c.at));
 
+  /**
+   * 使用中回報的照片借用 supplement 群組存放（inuse.js 的 `meta.stage='inuse'`，
+   * **不**併入租前基準）。凡是「補拍」的統計都要排除它們，否則回報一張照片就會
+   * 讓「開鎖後補拍」看起來有做，數字也會多一張。
+   */
+  const supplementShots = groupsOfCaptures.supplement.filter((c) => c?.meta?.stage !== "inuse");
+  const inuseShots = groupsOfCaptures.supplement.filter((c) => c?.meta?.stage === "inuse");
+
   // ---------------------------------------------------------------- 積分（全部來自 points.js）
 
   const total = state.totalPoints();
@@ -277,8 +285,8 @@ export function mount(root, ctx) {
       const est = points.estimateCaptureSetPoints(g.stage, groupsOfCaptures[g.stage], 4);
       if (est.rule) g.pending = `已有 ${groupsOfCaptures[g.stage].length} 張紀錄，預估「${est.label}」+${est.points}（由拍照畫面授予）`;
     }
-    if (g.earned === 0 && g.stage === "supplement" && groupsOfCaptures.supplement.length) {
-      g.pending = `已補拍 ${groupsOfCaptures.supplement.length} 張，但尚未授予補拍積分（逾時或補拍畫面未授予）`;
+    if (g.earned === 0 && g.stage === "supplement" && supplementShots.length) {
+      g.pending = `已補拍 ${supplementShots.length} 張，但尚未授予補拍積分（逾時或補拍畫面未授予）`;
     }
     return g;
   });
@@ -289,7 +297,7 @@ export function mount(root, ctx) {
   const hasType = (t) => timeline.some((e) => e?.type === t);
   const chainChips = [
     { label: "取車基準", ok: groupsOfCaptures.pickup.some((c) => !c.skipped) },
-    { label: "開鎖後補拍", ok: groupsOfCaptures.supplement.some((c) => !c.skipped) },
+    { label: "開鎖後補拍", ok: supplementShots.some((c) => !c.skipped) },
     { label: "使用中回報", ok: (session.reports || []).length > 0 },
     { label: "還車存證", ok: groupsOfCaptures.return.some((c) => !c.skipped) },
     { label: "AI 比對", ok: hasType(EVENTS.AI_COMPARE) },
@@ -341,9 +349,11 @@ export function mount(root, ctx) {
       }</p>
       <div class="settle-groups">
         <span class="badge ${groupsOfCaptures.pickup.length ? "ok" : ""}">取車 ${groupsOfCaptures.pickup.length}</span>
-        <span class="badge ${groupsOfCaptures.supplement.length ? "ok" : ""}">補拍 ${groupsOfCaptures.supplement.length}</span>
+        <span class="badge ${supplementShots.length ? "ok" : ""}">補拍 ${supplementShots.length}</span>
         <span class="badge ${groupsOfCaptures.return.length ? "ok" : ""}">還車 ${groupsOfCaptures.return.length}</span>
-        <span class="badge ${(session.reports || []).length ? "ok" : ""}">回報 ${(session.reports || []).length}</span>
+        <span class="badge ${(session.reports || []).length ? "ok" : ""}">回報 ${(session.reports || []).length}${
+          inuseShots.length ? `（附 ${inuseShots.length} 張）` : ""
+        }</span>
       </div>
       ${
         thumbs.length

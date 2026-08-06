@@ -34,6 +34,14 @@ const SIM_NOTE =
 // ------------------------------------------------------------------ 證據鏈定義
 
 /**
+ * 使用中回報的照片借用 `supplement` 群組存放（見 inuse.js：`meta.stage='inuse'`，
+ * **不**併入租前基準）。證據鏈一定要按 `meta.stage` 分流，否則回報照片會被算成
+ * 「補拍」——「開鎖後沒有補拍」這個缺漏會被回報照片蓋掉。
+ */
+const isSupplementShot = (p) => p?.meta?.stage !== "inuse";
+const isInuseShot = (p) => p?.meta?.stage === "inuse";
+
+/**
  * 證據鏈分段。`types` = 這一段要顯示哪些 timeline 事件；
  * `keyTypes` = 哪些事件才算「這一段有存證」（例：補拍窗口只有開啟與逾時事件，
  * 卻沒有任何 SUPPLEMENT_CAPTURE，那就是「窗口開了但沒補拍」= 沒有存證）。
@@ -53,6 +61,7 @@ const CHAIN = [
     key: "supplement",
     label: "開鎖後補拍窗口",
     group: "supplement",
+    photoFilter: isSupplementShot,
     types: [
       EVENTS.UNLOCK,
       EVENTS.SUPPLEMENT_OPEN,
@@ -67,6 +76,9 @@ const CHAIN = [
   {
     key: "inuse",
     label: "使用中回報",
+    /** 回報照片存在 supplement 群組，用 meta.stage 撈回來（見上方註解）。 */
+    group: "supplement",
+    photoFilter: isInuseShot,
     types: [EVENTS.REPORT_CREATED],
     keyTypes: [EVENTS.REPORT_CREATED],
     gap: "使用期間沒有任何回報 —— 若問題發生在使用中，缺少即時存證。",
@@ -632,6 +644,7 @@ function buildChain(state, events) {
       } catch {
         photos = [];
       }
+      if (seg.photoFilter) photos = photos.filter(seg.photoFilter);
     }
     const hasKey = list.some((e) => seg.keyTypes.includes(e.type));
     const range = RANGE([...list.map((e) => e.at), ...photos.map((p) => p.at)]);
@@ -1019,7 +1032,9 @@ export function mount(root, ctx) {
           withImage: shots.length,
           skipped: captures.length - shots.length,
           pickup: safeCount("pickup"),
-          supplement: safeCount("supplement"),
+          // supplement 群組同時存了「補拍」與「使用中回報」的照片，分開報數
+          supplement: safeGroup("supplement").filter(isSupplementShot).length,
+          inuseReport: safeGroup("supplement").filter(isInuseShot).length,
           return: safeCount("return"),
         },
         timestampRange: capRange
@@ -1103,12 +1118,16 @@ export function mount(root, ctx) {
     };
   }
 
-  function safeCount(group) {
+  function safeGroup(group) {
     try {
-      return (state.getCaptures(group) || []).length;
+      return state.getCaptures(group) || [];
     } catch {
-      return 0;
+      return [];
     }
+  }
+
+  function safeCount(group) {
+    return safeGroup(group).length;
   }
 
   let packageText = "";
