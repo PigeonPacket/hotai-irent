@@ -163,13 +163,23 @@ function build() {
         <details class="sens">
           <summary>站位敏感度 —— 為什麼要「往後退」</summary>
           <table>
-            <tr><td>站太近 2.5 m</td><td class="bad">角點偏差 85%</td></tr>
-            <tr><td>站太遠 3.8 m</td><td class="good">11%</td></tr>
-            <tr><td>相機高 1.3 vs 1.5 m</td><td class="good">11%</td></tr>
-            <tr><td>鏡頭 24 vs 26 mm</td><td class="good">8%</td></tr>
+            <tr><td>距離 2.85 m（−1.0 m）</td><td class="bad">66%　全車出框</td></tr>
+            <tr><td>距離 3.35 m（−0.5 m）</td><td class="bad">19%</td></tr>
+            <tr><td>距離 4.35 m（+0.5 m）</td><td class="good">11%</td></tr>
+            <tr><td>距離 4.85 m（+1.0 m）</td><td class="good">18%</td></tr>
+            <tr><td>偏擺 ±10°（35 / 55°）</td><td class="good">11–17%</td></tr>
+            <tr><td>偏擺 ±15°（30 / 60°）</td><td class="bad">15–27%</td></tr>
+            <tr><td>相機高 ±0.2 m（1.3 / 1.7 m）</td><td class="good">6.0%</td></tr>
+            <tr><td>相機高 ±0.4 m（1.1 / 1.9 m）</td><td class="good">12%</td></tr>
+            <tr><td>鏡頭 24 / 28 mm</td><td class="good">4.4%</td></tr>
           </table>
-          <p><b>太近的代價是太遠的八倍。</b>拿不準的時候，退一步。</p>
-          <p class="fine">上表為既有分析結論。畫面上的即時讀數是本頁自算的「外接框角點平均位移 ÷ 車寬」，定義不同，看趨勢即可。</p>
+          <p><b>拿不準的時候，退一步。</b>同幅度下太近比太遠貴 1.9×（±0.5 m）到 3.8×（±1.0 m），
+             而且失效方式不同 —— 太遠只是車體變小，<b>低於約 3.2 m 全車直接出框</b>。</p>
+          <p><b>鏡頭差異幾乎不必管</b>（4.4%，全表最小）；<b>偏擺與距離同等重要</b>，別只顧著前後走。</p>
+          <p class="fine">數字是用本頁同一組相機模型（<code>geom.js</code> 的 <code>makeCam</code>）＋ Corolla Cross 外接框，
+             以基準 3.85 m / 1.5 m / 45° / 26 mm 重算的：單次只改一個參數，量外接框角點最大位移 ÷ 畫面上車寬，
+             四角取最差值（基準值代入為 0.0%）。畫面上的即時讀數是同一定義的<b>平均</b>位移，所以會略小。
+             完整表與結論見 <code>docs/PIG-13-UX-Flow.md</code> §1.2。</p>
         </details>
       </section>
 
