@@ -76,6 +76,41 @@ export const POINT_RULES = Object.freeze([
     once: false,
     note: "減刑激勵；每次申報各給一次",
   },
+  // ------------------------------------------------------------------
+  // 以下為後續 append（不改上面既有規則的 id 與分數）
+  //
+  // 「四角齊備但有品質警告」中間級 —— 修正一個**產品層級**的反向激勵：
+  // 原本只有兩級（complete 20 / partial 5），而 isCaptureSetQualified() 是
+  // all-or-nothing，於是
+  //     四角全部按「先繼續」跳過        → partial 5 分
+  //     四角都認真拍、其中一張光線偏暗  → partial 5 分   ← 平手
+  // 兩者同分。使用者一旦發現「一張警告 = 全部跳過」，理性選擇就是全部跳過，
+  // 這條規則會自己反打掉本原型的核心論證（notes/260702.md 7/2 實測第 2 點：
+  // 目前 iRent 讓使用者可以隨便亂拍直接過關，我們要用動機讓他願意好好拍）。
+  //
+  // 分數 10 的理由：階梯設成 5 → 10 → 20（每級翻倍）。
+  //   - 對「全部跳過」+5：湊齊四角一定嚴格優於什麼都不拍，努力有回報。
+  //   - 對「品質達標」-10：最大的一段增幅掛在**品質**那一步，
+  //     所以「把四角補齊」永遠不能替代「把每張拍好」，品質仍是主要誘因。
+  // ------------------------------------------------------------------
+  {
+    id: "pickup_all_angles",
+    points: 10,
+    label: "取車四角齊備（有品質警告）",
+    stage: "pickup",
+    exclusive: "pickup",
+    once: true,
+    note: "四角都實際拍了、沒有跳過，但至少一張未通過品質檢查",
+  },
+  {
+    id: "return_all_angles",
+    points: 10,
+    label: "還車四角齊備（有品質警告）",
+    stage: "return",
+    exclusive: "return",
+    once: true,
+    note: "同 pickup_all_angles",
+  },
 ]);
 
 const RULE_INDEX = new Map(POINT_RULES.map((r) => [r.id, r]));
@@ -113,19 +148,63 @@ export function isCaptureSetQualified(captures = [], required = 4) {
 }
 
 /**
- * 依 §5 評估一組四角拍照該拿哪一條規則。
+ * 判斷一組拍照是否「四角齊備」—— 每一角都實際按了快門、沒有用「先繼續」跳過，
+ * 但**不要求**品質檢查通過。
+ *
+ * 這是 `isCaptureSetQualified()` 的放寬版，用來把中間級跟「什麼都沒拍」分開。
+ * @param {Array} captures
+ * @param {number} required
+ */
+export function isCaptureSetCovered(captures = [], required = 4) {
+  const corners = captures.filter((c) => c.category === "corner");
+  if (corners.length < required) return false;
+  return corners.every((c) => !c.skipped);
+}
+
+/** evaluateCaptureSet() 的等第（= 規則 id 的後綴，`${stage}_${tier}`）。 */
+export const CAPTURE_TIERS = Object.freeze({
+  COMPLETE: "complete",
+  ALL_ANGLES: "all_angles",
+  PARTIAL: "partial",
+});
+
+/**
+ * 依 §5 評估一組四角拍照該拿哪一條規則。三級（分數見 POINT_RULES）：
+ *
+ *   complete    四角齊備且每張都通過品質檢查
+ *   all_angles  四角齊備但至少一張有品質警告   ← 中間級，避免「有瑕疵」＝「全跳過」
+ *   partial     其餘（有跳過的角 / 張數不足）
+ *
  * @param {"pickup"|"return"} stage
  * @param {Array} captures
  * @param {number} required
- * @returns {{ rule: PointRule|null, points: number, qualified: boolean }}
+ * @returns {{ rule: PointRule|null, points: number, qualified: boolean,
+ *             covered: boolean, tier: string|null }}
  */
 export function evaluateCaptureSet(stage, captures = [], required = 4) {
-  const qualified = isCaptureSetQualified(captures, required);
-  const ruleId = qualified ? `${stage}_complete` : `${stage}_partial`;
-  const rule = getRule(ruleId);
   const attempted = captures.length > 0;
-  if (!attempted) return { rule: null, points: 0, qualified: false };
-  return { rule, points: rule ? rule.points : 0, qualified };
+  if (!attempted) {
+    return { rule: null, points: 0, qualified: false, covered: false, tier: null };
+  }
+  const qualified = isCaptureSetQualified(captures, required);
+  const covered = qualified || isCaptureSetCovered(captures, required);
+  const tier = qualified
+    ? CAPTURE_TIERS.COMPLETE
+    : covered
+      ? CAPTURE_TIERS.ALL_ANGLES
+      : CAPTURE_TIERS.PARTIAL;
+  const rule = getRule(`${stage}_${tier}`);
+  return { rule, points: rule ? rule.points : 0, qualified, covered, tier };
+}
+
+/**
+ * 某個等第在指定階段的分數合計 —— settlement 用它畫「分數階梯」，
+ * 這樣規則 id 的組字串留在 points.js，畫面不用自己拼 `pickup_partial`。
+ * @param {string} tier CAPTURE_TIERS 之一
+ * @param {string[]} [stages] 預設取車＋還車兩段
+ */
+export function captureSetTierPoints(tier, stages = ["pickup", "return"]) {
+  return stages.reduce((sum, stage) => sum + (getRule(`${stage}_${tier}`)?.points || 0), 0);
 }
 
 /**

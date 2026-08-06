@@ -257,8 +257,35 @@ export function mount(root, ctx) {
   const photoCap = ruleP("pickup_complete") + ruleP("supplement_complete") + ruleP("return_complete");
   const honest = ruleP("honest_report");
   const maxAttainable = points.maxAttainable(); // 含誠實申報 1 次
-  const lazyPath = ruleP("pickup_partial") + ruleP("return_partial");
   const ladderMax = Math.max(maxAttainable, total, 1);
+
+  /**
+   * 分數階梯：三個等第都以「取車＋還車兩段」為同一個比較基準，
+   * 直接讀 points.js 的規則分數，畫面裡不寫死任何數字。
+   *   partial     全部按「先繼續」跳過
+   *   all_angles  四角齊備但有品質警告   ← 中間級（沒有它，上下兩列會平手）
+   *   complete    四角齊備且品質達標
+   */
+  const T = points.CAPTURE_TIERS;
+  const stageTier = (tier) => points.captureSetTierPoints(tier, ["pickup"]);
+  const lazyPath = points.captureSetTierPoints(T.PARTIAL);
+  const coveredPath = points.captureSetTierPoints(T.ALL_ANGLES);
+  const qualityPath = points.captureSetTierPoints(T.COMPLETE);
+  /** 規則要有效，這條嚴格遞增的關係必須成立（平手＝反向激勵，見 points.js 的註解）。 */
+  const ladderSane = lazyPath < coveredPath && coveredPath < qualityPath;
+
+  const ladderRows = [
+    { order: 1, label: "全部按「先繼續」跳過（取車＋還車基礎分）", value: lazyPath },
+    { order: 2, label: "四角都拍了，但有一張以上品質警告", value: coveredPath },
+    { order: 3, label: "四角都拍且品質達標（取車＋還車）", value: qualityPath },
+    { order: 4, label: "你這一次", value: total, cls: "mine" },
+    {
+      order: 5,
+      label: `再加補拍 ${ruleP("supplement_complete")} ＋誠實申報 ${honest}（本輪上限）`,
+      value: maxAttainable,
+      cls: "best",
+    },
+  ].sort((a, b) => a.value - b.value || a.order - b.order);
 
   // 互斥組 → 一個區塊（互斥組沒有的規則各自成組）
   const breakdown = state.pointsBreakdown();
@@ -403,8 +430,10 @@ export function mount(root, ctx) {
 
     <div class="card">
       <h2 class="section-title">積分明細</h2>
-      <p class="muted" style="margin:0 0 4px">同一階段是<strong>互斥組</strong>：拿到「完整達標」就會取代「有警告仍跳過」的基礎分，
-      不是每張照片各自計分。以下直接讀 <code>state.pointsBreakdown()</code>。</p>
+      <p class="muted" style="margin:0 0 4px">同一階段是<strong>互斥組</strong>，分三個等第（以取車段為例：
+      達標 ${stageTier(T.COMPLETE)} ／四角齊備但有品質警告 ${stageTier(T.ALL_ANGLES)} ／有跳過
+      ${stageTier(T.PARTIAL)}），只保留最高的那一筆，不是每張照片各自計分。
+      以下直接讀 <code>state.pointsBreakdown()</code>。</p>
       ${pointGroups
         .map((g) => {
           const rows = g.rows
@@ -450,25 +479,29 @@ export function mount(root, ctx) {
     <div class="card">
       <h2 class="section-title">分數階梯（為什麼「亂拍」不會比較划算）</h2>
       <ul class="settle-ladder">
-        <li>
-          <div class="settle-ladder-top"><span class="settle-ladder-label">全部有警告仍跳過（取車＋還車基礎分）</span><b>${lazyPath}</b></div>
-          <div class="settle-bar"><i style="width:${((lazyPath / ladderMax) * 100).toFixed(1)}%"></i></div>
-        </li>
-        <li class="mine">
-          <div class="settle-ladder-top"><span class="settle-ladder-label">你這一次</span><b>${total}</b></div>
-          <div class="settle-bar"><i style="width:${((total / ladderMax) * 100).toFixed(1)}%"></i></div>
-        </li>
-        <li class="best">
-          <div class="settle-ladder-top"><span class="settle-ladder-label">四角＋補拍全達標（＋誠實申報 1 次）</span><b>${maxAttainable}</b></div>
-          <div class="settle-bar"><i style="width:100%"></i></div>
-        </li>
+        ${ladderRows
+          .map(
+            (r) => `<li class="${r.cls || ""}">
+          <div class="settle-ladder-top"><span class="settle-ladder-label">${escapeHtml(
+            r.label
+          )}</span><b>${r.value}</b></div>
+          <div class="settle-bar"><i style="width:${Math.min(
+            100,
+            (r.value / ladderMax) * 100
+          ).toFixed(1)}%"></i></div>
+        </li>`
+          )
+          .join("")}
       </ul>
       <p class="settle-hint">${
-        lazyPath < photoCap
-          ? `跳過路線 ${lazyPath} 分 &lt; 好好拍 ${photoCap} 分，激勵方向正確；「亂拍通過 +${ruleP(
-              "pickup_partial"
-            )}」保留基礎分，是為了鼓勵至少拍（PIG-13 §5），但不會划算過認真拍。`
-          : `⚠ 規則異常：跳過路線 ${lazyPath} 分 ≥ 好好拍 ${photoCap} 分，points.js 的規則需要修正。`
+        ladderSane
+          ? `三個等第嚴格遞增：全部跳過 ${lazyPath} ＜ 四角齊備但有警告 ${coveredPath} ＜ 四角達標 ${qualityPath}。
+             中間這一級是關鍵 —— 少了它，「認真拍但有一張過暗」和「全部跳過」會同樣是 ${lazyPath} 分，
+             使用者一發現這件事，理性選擇就變成全部跳過，獎勵機制會自己反打掉「好好拍」的誘因。
+             最大的一段增幅（+${qualityPath - coveredPath}）掛在<strong>品質</strong>那一步，
+             所以「把四角補齊」不會取代「把每張拍好」。`
+          : `⚠ 規則異常：分數階梯不是嚴格遞增（跳過 ${lazyPath} / 有警告 ${coveredPath} / 達標 ${qualityPath}），
+             會出現平手或反向激勵，points.js 的規則需要修正。`
       }</p>
     </div>
 
